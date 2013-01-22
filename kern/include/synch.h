@@ -5,6 +5,8 @@
 #ifndef _SYNCH_H_
 #define _SYNCH_H_
 
+#include "opt-A1.h"
+
 /*
  * Dijkstra-style semaphore.
  * Operations:
@@ -52,6 +54,11 @@ struct lock {
 	char *name;
 	// add what you need here
 	// (don't forget to mark things volatile as needed)
+        #if OPT_A1
+
+        volatile struct thread *thread;
+        
+        #endif /* OPT_A1 */
 };
 
 struct lock *lock_create(const char *name);

@@ -9,6 +9,7 @@
 #include <thread.h>
 #include <curthread.h>
 #include <machine/spl.h>
+#include "opt-A1.h"
 
 ////////////////////////////////////////////////////////////
 //
@@ -133,27 +134,63 @@ lock_destroy(struct lock *lock)
 void
 lock_acquire(struct lock *lock)
 {
-	// Write this
+        #if OPT_A1
 
-	(void)lock;  // suppress warning until code gets written
+        assert (lock != NULL);
+        
+        while (lock->thread != NULL) {}
+        
+        lock->thread = curthread;
+            
+        #else
+
+        // Write this
+
+        (void)lock;  // suppress warning until code gets written
+                
+        #endif /* OPT_A1 */
+               
 }
 
 void
 lock_release(struct lock *lock)
 {
-	// Write this
+        #if OPT_A1
 
-	(void)lock;  // suppress warning until code gets written
+        assert(lock != NULL);
+        
+        while (curthread != lock->thread) {}
+        
+        lock->thread = NULL;
+            
+        #else
+
+            // Write this
+
+            (void)lock;  // suppress warning until code gets written
+            
+        #endif /* OPT_A1 */
+        
 }
 
 int
 lock_do_i_hold(struct lock *lock)
 {
-	// Write this
+        #if OPT_A1
 
+        assert(lock != NULL);
+        
+        return (lock->thread == curthread);
+        
+        #else
+
+	// Write this
+    
 	(void)lock;  // suppress warning until code gets written
 
 	return 1;    // dummy until code gets written
+        
+        #endif /* OPT_A1 */
 }
 
 ////////////////////////////////////////////////////////////
