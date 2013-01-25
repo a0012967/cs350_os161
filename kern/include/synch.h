@@ -67,6 +67,14 @@ void         lock_release(struct lock *);
 int          lock_do_i_hold(struct lock *);
 void         lock_destroy(struct lock *);
 
+#if OPT_A1
+
+struct list{
+    struct thread *thread;
+    struct list *next;
+};
+
+#endif
 
 /*
  * Condition variable.
@@ -98,6 +106,12 @@ struct cv {
 	char *name;
 	// add what you need here
 	// (don't forget to mark things volatile as needed)
+	#if OPT_A1
+
+	// a list of blocked threads 
+	struct list *threads;
+
+	#endif
 };
 
 struct cv *cv_create(const char *name);

@@ -233,23 +233,137 @@ cv_destroy(struct cv *cv)
 void
 cv_wait(struct cv *cv, struct lock *lock)
 {
+        #if OPT_A1
+    
+        assert(cv != NULL);
+        assert(lock != NULL);
+        
+        lock_release(lock);
+        
+        int spl;
+        struct list *it;   // iterator for queue of threads
+        struct list *lp;   // ptr to new thread to be enqueued
+        struct thread *t;
+        
+        // create a new list item to enqueue the current thread
+        lp = kmalloc(sizeof(struct list));
+        lp->thread = curthread;
+        lp->next = NULL;
+        
+        t = lp->thread; // storing address of the curthread in order to put 
+                        // the thread to sleep afterwards
+        
+        spl = splhigh();
+        
+        it = cv->threads;
+        
+        // append to end of list
+        if (it == NULL){ // queue is empty
+            
+            cv->threads = lp;
+            
+        } else { // iterates until reaches end of queue, append lp there
+            
+            while (it->next != NULL)
+            {
+                it = it->next;
+            }
+            
+            it->next = lp;
+        }
+        
+        thread_sleep(t);
+        
+        // wait until t is woken up
+        while (curthread != t) {}
+            
+        lock_acquire(lock);
+
+        #else
+
 	// Write this
 	(void)cv;    // suppress warning until code gets written
 	(void)lock;  // suppress warning until code gets written
+        
+        #endif /* OPT_A1 */
 }
 
 void
 cv_signal(struct cv *cv, struct lock *lock)
 {
+        #if OPT_A1
+        
+        lock_release(lock);
+        
+        int spl;
+        struct list *tmp;
+        
+        spl = splhigh();
+        
+        // wake up the first thread in queue
+        if (cv->threads != NULL){
+            
+            tmp = cv->threads;
+            
+            thread_wakeup(tmp->thread);
+            
+            cv->threads = cv->threads->next;
+            
+            tmp->next = NULL;
+        }
+        
+        splx(spl);
+        
+        kfree(tmp);   // free the first thread which was on queue
+        
+        lock_acquire(lock);
+        
+        #else
+
 	// Write this
 	(void)cv;    // suppress warning until code gets written
 	(void)lock;  // suppress warning until code gets written
+        
+        #endif /* OPT_A1 */
 }
 
 void
 cv_broadcast(struct cv *cv, struct lock *lock)
 {
+        #if OPT_A1
+
+        lock_release(lock);
+        
+        int spl;
+        struct list *tmp;
+        
+        spl = splhigh();
+        
+        // wake up all threads in queue, starting from the front
+        while (cv->threads != NULL){
+            
+            tmp = cv->threads;
+            
+            thread_wakeup(tmp->thread);
+            
+            cv->threads = cv->threads->next;
+            
+            tmp->next = NULL;
+            
+            kfree(tmp); // free the list item
+        }
+        
+        assert(cv->threads == NULL);
+        
+        splx(spl);
+        
+        lock_acquire(lock);
+        
+        #else
+
 	// Write this
 	(void)cv;    // suppress warning until code gets written
 	(void)lock;  // suppress warning until code gets written
+        
+        #endif /* OPT_A1 */
 }
