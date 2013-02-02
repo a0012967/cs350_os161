@@ -136,11 +136,19 @@ lock_acquire(struct lock *lock)
 {
         #if OPT_A1
 
+        int spl;
         assert (lock != NULL);
         
-        while (lock->thread != NULL) {}
+        spl = splhigh();
+        
+        while (lock->thread != NULL) 
+        {
+            thread_sleep(lock);
+        }
         
         lock->thread = curthread;
+        
+        splx(spl);
             
         #else
 
@@ -157,17 +165,26 @@ lock_release(struct lock *lock)
 {
         #if OPT_A1
 
+        int spl;
+        
         assert(lock != NULL);
         
-        while (curthread != lock->thread) {}
+        spl = splhigh();
+        
+        if (lock_do_i_hold(lock) == 1) 
+        {
+            thread_wakeup(lock);
+        }
         
         lock->thread = NULL;
+        
+        splx(spl);
             
         #else
 
-            // Write this
+        // Write this
 
-            (void)lock;  // suppress warning until code gets written
+        (void)lock;  // suppress warning until code gets written
             
         #endif /* OPT_A1 */
         
@@ -241,42 +258,24 @@ cv_wait(struct cv *cv, struct lock *lock)
         lock_release(lock);
         
         int spl;
-        struct list *it;   // iterator for queue of threads
-        struct list *lp;   // ptr to new thread to be enqueued
-        struct thread *t;
+
+        struct thread *t; // stores address of curthread, i.e. the thread which 
+                          // needs to be put to sleep
         
-        // create a new list item to enqueue the current thread
-        lp = kmalloc(sizeof(struct list));
-        lp->thread = curthread;
-        lp->next = NULL;
-        
-        t = lp->thread; // storing address of the curthread in order to put 
-                        // the thread to sleep afterwards
+        if (cv->q == NULL)
+            cv->q = q_create(100); // initialize a queue of size 100 for now
+                
+        t = curthread; // storing address of the curthread in order to put 
+                       // the same thread to sleep afterwards
         
         spl = splhigh();
         
-        it = cv->threads;
-        
-        // append to end of list
-        if (it == NULL){ // queue is empty
-            
-            cv->threads = lp;
-            
-        } else { // iterates until reaches end of queue, append lp there
-            
-            while (it->next != NULL)
-            {
-                it = it->next;
-            }
-            
-            it->next = lp;
-        }
+        q_addtail(cv->q,t);
         
         thread_sleep(t);
+                   
+        splx(spl);
         
-        // wait until t is woken up
-        while (curthread != t) {}
-            
         lock_acquire(lock);
 
         #else
@@ -296,26 +295,16 @@ cv_signal(struct cv *cv, struct lock *lock)
         lock_release(lock);
         
         int spl;
-        struct list *tmp;
         
         spl = splhigh();
         
-        // wake up the first thread in queue
-        if (cv->threads != NULL){
-            
-            tmp = cv->threads;
-            
-            thread_wakeup(tmp->thread);
-            
-            cv->threads = cv->threads->next;
-            
-            tmp->next = NULL;
+        if (!q_empty(cv->q))
+        {
+            thread_wakeup(q_remhead(cv->q));
         }
         
         splx(spl);
-        
-        kfree(tmp);   // free the first thread which was on queue
-        
+
         lock_acquire(lock);
         
         #else
@@ -335,25 +324,14 @@ cv_broadcast(struct cv *cv, struct lock *lock)
         lock_release(lock);
         
         int spl;
-        struct list *tmp;
         
         spl = splhigh();
         
         // wake up all threads in queue, starting from the front
-        while (cv->threads != NULL){
-            
-            tmp = cv->threads;
-            
-            thread_wakeup(tmp->thread);
-            
-            cv->threads = cv->threads->next;
-            
-            tmp->next = NULL;
-            
-            kfree(tmp); // free the list item
+        while (!q_empty(cv->q))
+        {
+            thread_wakeup(q_remhead(cv->q));
         }
-        
-        assert(cv->threads == NULL);
         
         splx(spl);
         
