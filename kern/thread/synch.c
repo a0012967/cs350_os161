@@ -298,7 +298,7 @@ cv_signal(struct cv *cv, struct lock *lock)
         
         spl = splhigh();
         
-        if (!q_empty(cv->q))
+        if (cv->q && !q_empty(cv->q))
         {
             thread_wakeup(q_remhead(cv->q));
         }
@@ -328,9 +328,12 @@ cv_broadcast(struct cv *cv, struct lock *lock)
         spl = splhigh();
         
         // wake up all threads in queue, starting from the front
-        while (!q_empty(cv->q))
+        if (cv->q)
         {
-            thread_wakeup(q_remhead(cv->q));
+            while (!q_empty(cv->q))
+            {
+                thread_wakeup(q_remhead(cv->q));
+            }
         }
         
         splx(spl);
