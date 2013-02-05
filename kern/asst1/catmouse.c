@@ -21,7 +21,11 @@
 #include <test.h>
 #include <thread.h>
 #include <synch.h>
+#include "opt-A1.h"
+
+#if OPT_A1
 #include <queue.h>
+#endif
 
 /*
  * 
@@ -68,6 +72,7 @@ int NumCats;   // number of cats
 int NumMice;   // number of mice
 int NumLoops;  // number of times each cat and mouse should eat
 
+#if OPT_A1
 /*
  * Keep a list of empty bowls
  */
@@ -88,6 +93,7 @@ static int volatile waiting_cats_count;
 /* how many mice are waiting to eat?
  */
 static int volatile waiting_mice_count;
+#endif
 
 /*
  * Once the main driver function (catmouse()) has created the cat and mouse
@@ -96,17 +102,27 @@ static int volatile waiting_mice_count;
  */
 struct semaphore *CatMouseWait;
 
+#if OPT_A1
+/*
+ * Prevents the creatures to eat from more than the already available bowls 
+ */
 struct semaphore *MaxBowlCount;
 
 /* lock used to synchronize empty bowls
- *
  */
 static struct lock *FreeBlockBowls;
 
+/* lock used to synchronize cat and mouse turns
+ */
 static struct lock *WaitConditions;
 
+/* condition variables to wait and signal when all cats are done eating
+ * or when all mice are done eating
+ */
 static struct cv *cvNoCatsEating;
 static struct cv *cvNoMiceEating;
+
+#endif
 
 /*
  * 
@@ -165,6 +181,7 @@ cat_simulation(void * unusedpointer,
      * synchronization so that the cat does not violate
      * the rules when it eats */
     
+    #if OPT_A1
     /* Critical Section: controlling when the cat gets to eat */
     lock_acquire(WaitConditions);
     
@@ -225,6 +242,7 @@ cat_simulation(void * unusedpointer,
     lock_release(WaitConditions);
     
     V(MaxBowlCount);
+    #endif
   }
 
   /* indicate that this cat simulation is finished */
@@ -282,6 +300,7 @@ mouse_simulation(void * unusedpointer,
      * synchronization so that the mouse does not violate
      * the rules when it eats */
 
+    #if OPT_A1
     lock_acquire(WaitConditions);
     
     waiting_mice_count++;
@@ -342,7 +361,7 @@ mouse_simulation(void * unusedpointer,
     lock_release(WaitConditions);
     
     V(MaxBowlCount);
-
+    #endif
   }
 
   /* indicate that this mouse is finished */
@@ -382,7 +401,9 @@ catmouse(int nargs,
 {
   int index, error;
   int i;
-  int iBowl;
+  #if OPT_A1
+  int iBowl; // iterates through number of bowls
+  #endif
 
   /* check and process command line arguments */
   if (nargs != 5) {
@@ -420,7 +441,8 @@ catmouse(int nargs,
   if (CatMouseWait == NULL) {
     panic("catmouse: could not create semaphore\n");
   }
-
+  
+  #if OPT_A1
   /* create the semaphore used to restrict eating animals to the 
      number of bowls */
   MaxBowlCount = sem_create("BowlCount",NumBowls);
@@ -443,6 +465,8 @@ catmouse(int nargs,
   if (WaitConditions == NULL) {
       panic("synchtest: Eating Animal Count lock_create failed\n");
   }
+  #endif
+
   /* 
    * initialize the bowls
    */
@@ -450,6 +474,7 @@ catmouse(int nargs,
     panic("catmouse: error initializing bowls.\n");
   }
 
+  #if OPT_A1
   /* Initialize list of free bowls */
   FreeBowlsList = q_create(NumBowls);
   for (iBowl = 1; iBowl <= NumBowls; iBowl++)
@@ -464,6 +489,7 @@ catmouse(int nargs,
   
   waiting_cats_count = 0;
   waiting_mice_count = 0;
+  #endif
   
   /*
    * Start NumCats cat_simulation() threads.
@@ -494,7 +520,8 @@ catmouse(int nargs,
   /* clean up the semaphore that we created */
   sem_destroy(CatMouseWait);
   
-  /* test semaphore */
+  #if OPT_A1
+  /* clean up semaphore*/
   sem_destroy(MaxBowlCount);
   
   /* clean up cvs*/
@@ -504,15 +531,18 @@ catmouse(int nargs,
   /* clean up locks */
   lock_destroy(FreeBlockBowls);
   lock_destroy(WaitConditions);
-  
+  #endif
+
   /* clean up resources used for tracking bowl use */
   cleanup_bowls();
 
+  #if OPT_A1
   /* clean up queue of available bowls */
   while (!q_empty(FreeBowlsList))
       q_remhead(FreeBowlsList);
   
   q_destroy(FreeBowlsList);
+  #endif
   
   return 0;
 }
