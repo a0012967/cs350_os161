@@ -1,0 +1,1364 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configurationDescriptor version="84">
+  <logicalFolder name="root" displayName="root" projectFiles="true" kind="ROOT">
+    <df name="os161-1.11" root=".">
+      <df name=".sockets">
+      </df>
+      <df name="bin">
+        <df name="cat">
+          <in>cat.c</in>
+        </df>
+        <df name="cp">
+          <in>cp.c</in>
+        </df>
+        <df name="false">
+          <in>false.c</in>
+        </df>
+        <df name="ln">
+          <in>ln.c</in>
+        </df>
+        <df name="ls">
+          <in>ls.c</in>
+        </df>
+        <df name="mkdir">
+          <in>mkdir.c</in>
+        </df>
+        <df name="mv">
+          <in>mv.c</in>
+        </df>
+        <df name="pwd">
+          <in>pwd.c</in>
+        </df>
+        <df name="rm">
+          <in>rm.c</in>
+        </df>
+        <df name="rmdir">
+          <in>rmdir.c</in>
+        </df>
+        <df name="sh">
+          <in>sh.c</in>
+        </df>
+        <df name="sync">
+          <in>sync.c</in>
+        </df>
+        <df name="true">
+          <in>true.c</in>
+        </df>
+      </df>
+      <df name="docs">
+        <df name="ASST1">
+        </df>
+      </df>
+      <df name="include">
+        <df name="sys">
+          <in>ioctl.h</in>
+          <in>reboot.h</in>
+          <in>stat.h</in>
+          <in>types.h</in>
+          <in>wait.h</in>
+        </df>
+        <in>assert.h</in>
+        <in>err.h</in>
+        <in>errno.h</in>
+        <in>fcntl.h</in>
+        <in>limits.h</in>
+        <in>setjmp.h</in>
+        <in>stdarg.h</in>
+        <in>stdio.h</in>
+        <in>stdlib.h</in>
+        <in>string.h</in>
+        <in>time.h</in>
+        <in>unistd.h</in>
+      </df>
+      <df name="kern">
+        <df name="arch">
+          <df name="mips">
+            <df name="conf">
+            </df>
+            <df name="include">
+              <in>asmdefs.h</in>
+              <in>bus.h</in>
+              <in>ktypes.h</in>
+              <in>pcb.h</in>
+              <in>setjmp.h</in>
+              <in>specialreg.h</in>
+              <in>spl.h</in>
+              <in>switchframe.h</in>
+              <in>tlb.h</in>
+              <in>trapframe.h</in>
+              <in>types.h</in>
+              <in>vm.h</in>
+            </df>
+            <df name="mips">
+              <in>cache_mips1.S</in>
+              <in>dumbvm.c</in>
+              <in>exception.S</in>
+              <in>interrupt.c</in>
+              <in>lamebus_mips.c</in>
+              <in>pcb.c</in>
+              <in>ram.c</in>
+              <in>spl.c</in>
+              <in>start.S</in>
+              <in>switch.S</in>
+              <in>syscall.c</in>
+              <in>threadstart.S</in>
+              <in>tlb_mips1.S</in>
+              <in>trap.c</in>
+            </df>
+          </df>
+        </df>
+        <df name="asst1">
+          <in>bowls.c</in>
+          <in>catmouse.c</in>
+          <in>stoplight.c</in>
+        </df>
+        <df name="compile">
+          <df name="ASST0">
+            <df name="machine">
+              <in>asmdefs.h</in>
+              <in>bus.h</in>
+              <in>ktypes.h</in>
+              <in>pcb.h</in>
+              <in>setjmp.h</in>
+              <in>specialreg.h</in>
+              <in>spl.h</in>
+              <in>switchframe.h</in>
+              <in>tlb.h</in>
+              <in>trapframe.h</in>
+              <in>types.h</in>
+              <in>vm.h</in>
+            </df>
+            <in>autoconf.c</in>
+            <in>autoconf.h</in>
+            <in>opt-A0.h</in>
+            <in>opt-A1.h</in>
+            <in>opt-A2.h</in>
+            <in>opt-A3.h</in>
+            <in>opt-A4.h</in>
+            <in>opt-A5.h</in>
+            <in>opt-dumbvm.h</in>
+            <in>opt-net.h</in>
+            <in>opt-netfs.h</in>
+            <in>opt-sfs.h</in>
+            <in>opt-synchprobs.h</in>
+            <in>vers.c</in>
+          </df>
+          <df name="ASST1">
+            <df name="machine">
+              <in>asmdefs.h</in>
+              <in>bus.h</in>
+              <in>ktypes.h</in>
+              <in>pcb.h</in>
+              <in>setjmp.h</in>
+              <in>specialreg.h</in>
+              <in>spl.h</in>
+              <in>switchframe.h</in>
+              <in>tlb.h</in>
+              <in>trapframe.h</in>
+              <in>types.h</in>
+              <in>vm.h</in>
+            </df>
+            <in>autoconf.c</in>
+            <in>autoconf.h</in>
+            <in>opt-A0.h</in>
+            <in>opt-A1.h</in>
+            <in>opt-A2.h</in>
+            <in>opt-A3.h</in>
+            <in>opt-A4.h</in>
+            <in>opt-A5.h</in>
+            <in>opt-dumbvm.h</in>
+            <in>opt-net.h</in>
+            <in>opt-netfs.h</in>
+            <in>opt-sfs.h</in>
+            <in>opt-synchprobs.h</in>
+            <in>vers.c</in>
+          </df>
+        </df>
+        <df name="conf">
+        </df>
+        <df name="dev">
+          <df name="generic">
+            <in>beep.c</in>
+            <in>beep.h</in>
+            <in>console.c</in>
+            <in>console.h</in>
+            <in>pseudorand.c</in>
+            <in>pseudorand.h</in>
+            <in>pseudorand_att.c</in>
+            <in>random.c</in>
+            <in>random.h</in>
+            <in>rtclock.c</in>
+            <in>rtclock.h</in>
+          </df>
+          <df name="lamebus">
+            <in>beep_ltimer.c</in>
+            <in>con_lscreen.c</in>
+            <in>con_lser.c</in>
+            <in>emu.c</in>
+            <in>emu.h</in>
+            <in>emu_att.c</in>
+            <in>lamebus.c</in>
+            <in>lamebus.h</in>
+            <in>lhd.c</in>
+            <in>lhd.h</in>
+            <in>lhd_att.c</in>
+            <in>lnet.c</in>
+            <in>lnet_att.c</in>
+            <in>lrandom.c</in>
+            <in>lrandom.h</in>
+            <in>lrandom_att.c</in>
+            <in>lscreen.c</in>
+            <in>lscreen.h</in>
+            <in>lscreen_att.c</in>
+            <in>lser.c</in>
+            <in>lser.h</in>
+            <in>lser_att.c</in>
+            <in>ltimer.c</in>
+            <in>ltimer.h</in>
+            <in>ltimer_att.c</in>
+            <in>ltrace.c</in>
+            <in>ltrace.h</in>
+            <in>ltrace_att.c</in>
+            <in>random_lrandom.c</in>
+            <in>rtclock_ltimer.c</in>
+          </df>
+          <in>init.c</in>
+        </df>
+        <df name="fs">
+          <df name="sfs">
+            <in>sfs_fs.c</in>
+            <in>sfs_io.c</in>
+            <in>sfs_vnode.c</in>
+          </df>
+          <df name="vfs">
+            <in>device.c</in>
+            <in>devnull.c</in>
+            <in>vfscwd.c</in>
+            <in>vfslist.c</in>
+            <in>vfslookup.c</in>
+            <in>vfspath.c</in>
+            <in>vnode.c</in>
+          </df>
+        </df>
+        <df name="include">
+          <df name="kern">
+            <in>callno.h</in>
+            <in>errmsg.h</in>
+            <in>errno.h</in>
+            <in>ioctl.h</in>
+            <in>limits.h</in>
+            <in>sfs.h</in>
+            <in>stat.h</in>
+            <in>types.h</in>
+            <in>unistd.h</in>
+          </df>
+          <in>addrspace.h</in>
+          <in>array.h</in>
+          <in>bitmap.h</in>
+          <in>clock.h</in>
+          <in>curthread.h</in>
+          <in>dev.h</in>
+          <in>elf.h</in>
+          <in>emufs.h</in>
+          <in>fs.h</in>
+          <in>lib.h</in>
+          <in>queue.h</in>
+          <in>scheduler.h</in>
+          <in>sfs.h</in>
+          <in>stdarg.h</in>
+          <in>synch.h</in>
+          <in>syscall.h</in>
+          <in>test.h</in>
+          <in>thread.h</in>
+          <in>types.h</in>
+          <in>uio.h</in>
+          <in>uw-vmstats.h</in>
+          <in>version.h</in>
+          <in>vfs.h</in>
+          <in>vm.h</in>
+          <in>vnode.h</in>
+        </df>
+        <df name="lib">
+          <in>array.c</in>
+          <in>bitmap.c</in>
+          <in>copyinout.c</in>
+          <in>kgets.c</in>
+          <in>kheap.c</in>
+          <in>kprintf.c</in>
+          <in>misc.c</in>
+          <in>ntoh.c</in>
+          <in>queue.c</in>
+        </df>
+        <df name="main">
+          <in>main.c</in>
+          <in>menu.c</in>
+        </df>
+        <df name="test">
+          <in>arraytest.c</in>
+          <in>bitmaptest.c</in>
+          <in>fstest.c</in>
+          <in>malloctest.c</in>
+          <in>nettest.c</in>
+          <in>queuetest.c</in>
+          <in>synchtest.c</in>
+          <in>threadtest.c</in>
+          <in>tt3.c</in>
+        </df>
+        <df name="thread">
+          <in>hardclock.c</in>
+          <in>scheduler.c</in>
+          <in>synch.c</in>
+          <in>thread.c</in>
+        </df>
+        <df name="userprog">
+          <in>loadelf.c</in>
+          <in>runprogram.c</in>
+          <in>uio.c</in>
+        </df>
+        <df name="vm">
+          <in>addrspace.c</in>
+          <in>uw-vmstats.c</in>
+        </df>
+      </df>
+      <df name="lib">
+        <df name="crt0">
+          <in>mips-crt0.S</in>
+        </df>
+        <df name="hostcompat">
+          <in>err.c</in>
+          <in>host-err.h</in>
+          <in>hostcompat.c</in>
+          <in>hostcompat.h</in>
+          <in>time.c</in>
+        </df>
+        <df name="libc">
+          <in>__assert.c</in>
+          <in>__printf.c</in>
+          <in>__puts.c</in>
+          <in>abort.c</in>
+          <in>atoi.c</in>
+          <in>bzero.c</in>
+          <in>err.c</in>
+          <in>errno.c</in>
+          <in>exit.c</in>
+          <in>getchar.c</in>
+          <in>getcwd.c</in>
+          <in>memcmp.c</in>
+          <in>memcpy.c</in>
+          <in>memmove.c</in>
+          <in>memset.c</in>
+          <in>mips-setjmp.S</in>
+          <in>printf.c</in>
+          <in>putchar.c</in>
+          <in>puts.c</in>
+          <in>random.c</in>
+          <in>snprintf.c</in>
+          <in>strcat.c</in>
+          <in>strchr.c</in>
+          <in>strcmp.c</in>
+          <in>strcpy.c</in>
+          <in>strerror.c</in>
+          <in>strlen.c</in>
+          <in>strrchr.c</in>
+          <in>strtok.c</in>
+          <in>strtok_r.c</in>
+          <in>syscalls-mips.S</in>
+          <in>system.c</in>
+          <in>time.c</in>
+        </df>
+      </df>
+      <df name="man">
+        <df name="bin">
+        </df>
+        <df name="dev">
+        </df>
+        <df name="libc">
+        </df>
+        <df name="misc">
+        </df>
+        <df name="sbin">
+        </df>
+        <df name="syscall">
+        </df>
+        <df name="testbin">
+        </df>
+        <df name="toplevel">
+        </df>
+      </df>
+      <df name="mk">
+      </df>
+      <df name="my-testbin">
+        <df name="example">
+          <in>myExampleTest.c</in>
+        </df>
+      </df>
+      <df name="sbin">
+        <df name="dumpsfs">
+          <in>disk.c</in>
+          <in>disk.h</in>
+          <in>dumpsfs.c</in>
+          <in>support.c</in>
+          <in>support.h</in>
+        </df>
+        <df name="halt">
+          <in>halt.c</in>
+        </df>
+        <df name="mksfs">
+          <in>disk.c</in>
+          <in>disk.h</in>
+          <in>mksfs.c</in>
+          <in>support.c</in>
+          <in>support.h</in>
+        </df>
+        <df name="poweroff">
+          <in>poweroff.c</in>
+        </df>
+        <df name="reboot">
+          <in>reboot.c</in>
+        </df>
+      </df>
+      <df name="testbin">
+        <df name="add">
+          <in>add.c</in>
+        </df>
+        <df name="argtest">
+          <in>argtest.c</in>
+        </df>
+        <df name="badcall">
+          <in>bad_chdir.c</in>
+          <in>bad_close.c</in>
+          <in>bad_dup2.c</in>
+          <in>bad_execv.c</in>
+          <in>bad_fsync.c</in>
+          <in>bad_ftruncate.c</in>
+          <in>bad_getcwd.c</in>
+          <in>bad_getdirentry.c</in>
+          <in>bad_ioctl.c</in>
+          <in>bad_link.c</in>
+          <in>bad_lseek.c</in>
+          <in>bad_mkdir.c</in>
+          <in>bad_open.c</in>
+          <in>bad_pipe.c</in>
+          <in>bad_read.c</in>
+          <in>bad_readlink.c</in>
+          <in>bad_reboot.c</in>
+          <in>bad_remove.c</in>
+          <in>bad_rename.c</in>
+          <in>bad_rmdir.c</in>
+          <in>bad_sbrk.c</in>
+          <in>bad_stat.c</in>
+          <in>bad_symlink.c</in>
+          <in>bad_time.c</in>
+          <in>bad_waitpid.c</in>
+          <in>bad_write.c</in>
+          <in>common_buf.c</in>
+          <in>common_fds.c</in>
+          <in>common_path.c</in>
+          <in>config.h</in>
+          <in>driver.c</in>
+          <in>test.h</in>
+        </df>
+        <df name="bigfile">
+          <in>bigfile.c</in>
+        </df>
+        <df name="conman">
+          <in>conman.c</in>
+        </df>
+        <df name="crash">
+          <in>crash.c</in>
+        </df>
+        <df name="ctest">
+          <in>ctest.c</in>
+        </df>
+        <df name="dirconc">
+          <in>dirconc.c</in>
+        </df>
+        <df name="dirseek">
+          <in>dirseek.c</in>
+        </df>
+        <df name="dirtest">
+          <in>dirtest.c</in>
+        </df>
+        <df name="f_test">
+          <in>f_hdr.h</in>
+          <in>f_read.c</in>
+          <in>f_test.c</in>
+          <in>f_write.c</in>
+        </df>
+        <df name="farm">
+          <in>farm.c</in>
+        </df>
+        <df name="faulter">
+          <in>faulter.c</in>
+        </df>
+        <df name="filetest">
+          <in>filetest.c</in>
+        </df>
+        <df name="forkbomb">
+          <in>forkbomb.c</in>
+        </df>
+        <df name="forktest">
+          <in>forktest.c</in>
+        </df>
+        <df name="guzzle">
+          <in>guzzle.c</in>
+        </df>
+        <df name="hash">
+          <in>hash.c</in>
+        </df>
+        <df name="hog">
+          <in>hog.c</in>
+        </df>
+        <df name="huge">
+          <in>huge.c</in>
+        </df>
+        <df name="kitchen">
+          <in>kitchen.c</in>
+        </df>
+        <df name="malloctest">
+          <in>malloctest.c</in>
+        </df>
+        <df name="matmult">
+          <in>matmult-orig.c</in>
+          <in>matmult.c</in>
+        </df>
+        <df name="palin">
+          <in>palin.c</in>
+        </df>
+        <df name="parallelvm">
+          <in>parallelvm.c</in>
+        </df>
+        <df name="randcall">
+          <in>extern.h</in>
+          <in>main.c</in>
+        </df>
+        <df name="rmdirtest">
+          <in>rmdirtest.c</in>
+        </df>
+        <df name="rmtest">
+          <in>rmtest.c</in>
+        </df>
+        <df name="romemwrite">
+          <in>romemwrite.c</in>
+        </df>
+        <df name="sink">
+          <in>sink.c</in>
+        </df>
+        <df name="sort">
+          <in>sort.c</in>
+        </df>
+        <df name="sparse">
+          <in>sparse.c</in>
+        </df>
+        <df name="sty">
+          <in>sty.c</in>
+        </df>
+        <df name="tail">
+          <in>tail.c</in>
+        </df>
+        <df name="tictac">
+          <in>tictac.c</in>
+        </df>
+        <df name="tlbfaulter">
+          <in>tlbfaulter.c</in>
+        </df>
+        <df name="triplehuge">
+          <in>triple.c</in>
+          <in>triple.h</in>
+          <in>triplehuge.c</in>
+        </df>
+        <df name="triplemat">
+          <in>triplemat.c</in>
+        </df>
+        <df name="triplesort">
+          <in>triplesort.c</in>
+        </df>
+        <df name="userthreads">
+          <in>userthreads.c</in>
+        </df>
+      </df>
+      <df name="uw-testbin">
+        <df name="argtest">
+          <in>argtest.c</in>
+        </df>
+        <df name="common">
+          <in>funcs.c</in>
+        </df>
+        <df name="conc-io">
+          <in>conc-io.c</in>
+        </df>
+        <df name="files1">
+          <in>files1.c</in>
+        </df>
+        <df name="files2">
+          <in>files2.c</in>
+        </df>
+        <df name="lib">
+          <in>testutils.c</in>
+          <in>testutils.h</in>
+        </df>
+        <df name="segments">
+          <in>segments.c</in>
+        </df>
+        <df name="syscall">
+          <in>syscall.c</in>
+        </df>
+        <df name="vm-crash1">
+          <in>vm-crash1.c</in>
+        </df>
+        <df name="vm-crash2">
+          <in>vm-crash2.c</in>
+        </df>
+        <df name="vm-crash3">
+          <in>vm-crash3.c</in>
+        </df>
+        <df name="vm-data1">
+          <in>vm-data1.c</in>
+        </df>
+        <df name="vm-data2">
+          <in>vm-data2.c</in>
+        </df>
+        <df name="vm-data3">
+          <in>vm-data3.c</in>
+        </df>
+        <df name="vm-mix1">
+          <in>vm-mix1.c</in>
+        </df>
+        <df name="vm-mix1-exec">
+          <in>vm-mix1-exec.c</in>
+        </df>
+        <df name="vm-mix1-fork">
+          <in>vm-mix1-fork.c</in>
+        </df>
+        <df name="vm-mix2">
+          <in>vm-mix2.c</in>
+        </df>
+        <df name="vm-stack1">
+          <in>vm-stack1.c</in>
+        </df>
+        <df name="vm-stack2">
+          <in>vm-stack2.c</in>
+        </df>
+        <df name="writeread">
+          <in>writeread.c</in>
+        </df>
+      </df>
+    </df>
+    <logicalFolder name="ExternalFiles"
+                   displayName="Important Files"
+                   projectFiles="false"
+                   kind="IMPORTANT_FILES_FOLDER">
+      <itemPath>Makefile</itemPath>
+      <itemPath>configure</itemPath>
+    </logicalFolder>
+  </logicalFolder>
+  <sourceFolderFilter>^(nbproject)$</sourceFolderFilter>
+  <sourceRootList>
+    <Elem>.</Elem>
+  </sourceRootList>
+  <projectmakefile>Makefile</projectmakefile>
+  <confs>
+    <conf name="Default" type="0">
+      <toolsSet>
+        <remote-sources-mode>LOCAL_SOURCES</remote-sources-mode>
+        <compilerSet>GNU|GNU</compilerSet>
+      </toolsSet>
+      <codeAssistance>
+      </codeAssistance>
+      <makefileType>
+        <makeTool>
+          <buildCommandWorkingDir>.</buildCommandWorkingDir>
+          <buildCommand>${MAKE} -f Makefile</buildCommand>
+          <cleanCommand>${MAKE} -f Makefile clean</cleanCommand>
+          <executablePath></executablePath>
+        </makeTool>
+      </makefileType>
+      <item path="bin/cat/cat.c" ex="true" tool="0" flavor2="0">
+      </item>
+      <item path="bin/cp/cp.c" ex="true" tool="0" flavor2="0">
+      </item>
+      <item path="bin/false/false.c" ex="true" tool="0" flavor2="0">
+      </item>
+      <item path="bin/ln/ln.c" ex="true" tool="0" flavor2="0">
+      </item>
+      <item path="bin/ls/ls.c" ex="true" tool="0" flavor2="0">
+      </item>
+      <item path="bin/mkdir/mkdir.c" ex="true" tool="0" flavor2="0">
+      </item>
+      <item path="bin/mv/mv.c" ex="true" tool="0" flavor2="0">
+      </item>
+      <item path="bin/pwd/pwd.c" ex="true" tool="0" flavor2="0">
+      </item>
+      <item path="bin/rm/rm.c" ex="true" tool="0" flavor2="0">
+      </item>
+      <item path="bin/rmdir/rmdir.c" ex="true" tool="0" flavor2="0">
+      </item>
+      <item path="bin/sync/sync.c" ex="true" tool="0" flavor2="0">
+      </item>
+      <item path="bin/true/true.c" ex="true" tool="0" flavor2="0">
+      </item>
+      <folder path="os161-1.11/bin">
+        <cTool>
+          <incDir>
+            <pElem>../root/hostinclude</pElem>
+          </incDir>
+          <preprocessorList>
+            <Elem>HOST</Elem>
+          </preprocessorList>
+        </cTool>
+      </folder>
+      <folder path="os161-1.11/lib/hostcompat">
+        <cTool>
+          <incDir>
+            <pElem>../root/hostinclude</pElem>
+          </incDir>
+        </cTool>
+      </folder>
+      <folder path="os161-1.11/lib/libc">
+        <cTool>
+          <incDir>
+            <pElem>../root/include</pElem>
+          </incDir>
+        </cTool>
+      </folder>
+      <folder path="os161-1.11/my-testbin">
+        <cTool>
+          <incDir>
+            <pElem>../root/include</pElem>
+          </incDir>
+        </cTool>
+      </folder>
+      <folder path="os161-1.11/testbin/badcall">
+        <cTool>
+          <incDir>
+            <pElem>../root/include</pElem>
+          </incDir>
+        </cTool>
+      </folder>
+      <folder path="os161-1.11/testbin/f_test">
+        <cTool>
+          <incDir>
+            <pElem>../root/include</pElem>
+          </incDir>
+        </cTool>
+      </folder>
+      <folder path="os161-1.11/testbin/hash">
+        <cTool>
+          <incDir>
+            <pElem>../root/hostinclude</pElem>
+          </incDir>
+          <preprocessorList>
+            <Elem>HOST</Elem>
+          </preprocessorList>
+        </cTool>
+      </folder>
+      <folder path="os161-1.11/testbin/randcall">
+        <cTool>
+          <incDir>
+            <pElem>../root/include</pElem>
+          </incDir>
+        </cTool>
+      </folder>
+      <folder path="os161-1.11/testbin/triplehuge">
+        <cTool>
+          <incDir>
+            <pElem>../root/include</pElem>
+          </incDir>
+        </cTool>
+      </folder>
+      <folder path="os161-1.11/testbin/triplemat">
+        <cTool>
+          <incDir>
+            <pElem>../root/include</pElem>
+          </incDir>
+        </cTool>
+      </folder>
+      <folder path="os161-1.11/testbin/triplesort">
+        <cTool>
+          <incDir>
+            <pElem>../root/include</pElem>
+          </incDir>
+        </cTool>
+      </folder>
+      <item path="include/assert.h" ex="true" tool="3" flavor2="0">
+      </item>
+      <item path="include/err.h" ex="true" tool="3" flavor2="0">
+      </item>
+      <item path="include/errno.h" ex="true" tool="3" flavor2="0">
+      </item>
+      <item path="include/fcntl.h" ex="true" tool="3" flavor2="0">
+      </item>
+      <item path="include/limits.h" ex="true" tool="3" flavor2="0">
+      </item>
+      <item path="include/setjmp.h" ex="true" tool="3" flavor2="0">
+      </item>
+      <item path="include/stdarg.h" ex="true" tool="3" flavor2="0">
+      </item>
+      <item path="include/stdio.h" ex="true" tool="3" flavor2="0">
+      </item>
+      <item path="include/stdlib.h" ex="true" tool="3" flavor2="0">
+      </item>
+      <item path="include/string.h" ex="true" tool="3" flavor2="0">
+      </item>
+      <item path="include/sys/ioctl.h" ex="true" tool="3" flavor2="0">
+      </item>
+      <item path="include/sys/reboot.h" ex="true" tool="3" flavor2="0">
+      </item>
+      <item path="include/sys/stat.h" ex="true" tool="3" flavor2="0">
+      </item>
+      <item path="include/sys/types.h" ex="true" tool="3" flavor2="0">
+      </item>
+      <item path="include/sys/wait.h" ex="true" tool="3" flavor2="0">
+      </item>
+      <item path="include/time.h" ex="true" tool="3" flavor2="0">
+      </item>
+      <item path="include/unistd.h" ex="true" tool="3" flavor2="0">
+      </item>
+      <item path="kern/arch/mips/include/asmdefs.h" ex="true" tool="3" flavor2="0">
+      </item>
+      <item path="kern/arch/mips/include/bus.h" ex="true" tool="3" flavor2="0">
+      </item>
+      <item path="kern/arch/mips/include/ktypes.h" ex="true" tool="3" flavor2="0">
+      </item>
+      <item path="kern/arch/mips/include/pcb.h" ex="true" tool="3" flavor2="0">
+      </item>
+      <item path="kern/arch/mips/include/setjmp.h" ex="true" tool="3" flavor2="0">
+      </item>
+      <item path="kern/arch/mips/include/specialreg.h" ex="true" tool="3" flavor2="0">
+      </item>
+      <item path="kern/arch/mips/include/spl.h" ex="true" tool="3" flavor2="0">
+      </item>
+      <item path="kern/arch/mips/include/switchframe.h"
+            ex="true"
+            tool="3"
+            flavor2="0">
+      </item>
+      <item path="kern/arch/mips/include/tlb.h" ex="true" tool="3" flavor2="0">
+      </item>
+      <item path="kern/arch/mips/include/trapframe.h" ex="true" tool="3" flavor2="0">
+      </item>
+      <item path="kern/arch/mips/include/types.h" ex="true" tool="3" flavor2="0">
+      </item>
+      <item path="kern/arch/mips/include/vm.h" ex="true" tool="3" flavor2="0">
+      </item>
+      <item path="kern/arch/mips/mips/cache_mips1.S" ex="true" tool="4" flavor2="0">
+      </item>
+      <item path="kern/arch/mips/mips/dumbvm.c" ex="true" tool="0" flavor2="0">
+      </item>
+      <item path="kern/arch/mips/mips/exception.S" ex="true" tool="4" flavor2="0">
+      </item>
+      <item path="kern/arch/mips/mips/interrupt.c" ex="true" tool="0" flavor2="0">
+      </item>
+      <item path="kern/arch/mips/mips/lamebus_mips.c" ex="true" tool="0" flavor2="0">
+      </item>
+      <item path="kern/arch/mips/mips/pcb.c" ex="true" tool="0" flavor2="0">
+      </item>
+      <item path="kern/arch/mips/mips/ram.c" ex="true" tool="0" flavor2="0">
+      </item>
+      <item path="kern/arch/mips/mips/spl.c" ex="true" tool="0" flavor2="0">
+      </item>
+      <item path="kern/arch/mips/mips/start.S" ex="true" tool="4" flavor2="0">
+      </item>
+      <item path="kern/arch/mips/mips/switch.S" ex="true" tool="4" flavor2="0">
+      </item>
+      <item path="kern/arch/mips/mips/syscall.c" ex="true" tool="0" flavor2="0">
+      </item>
+      <item path="kern/arch/mips/mips/threadstart.S" ex="true" tool="4" flavor2="0">
+      </item>
+      <item path="kern/arch/mips/mips/tlb_mips1.S" ex="true" tool="4" flavor2="0">
+      </item>
+      <item path="kern/arch/mips/mips/trap.c" ex="true" tool="0" flavor2="0">
+      </item>
+      <item path="kern/asst1/bowls.c" ex="true" tool="0" flavor2="0">
+      </item>
+      <item path="kern/asst1/catmouse.c" ex="true" tool="0" flavor2="0">
+      </item>
+      <item path="kern/asst1/stoplight.c" ex="true" tool="0" flavor2="0">
+      </item>
+      <item path="kern/compile/ASST0/autoconf.c" ex="true" tool="0" flavor2="0">
+      </item>
+      <item path="kern/compile/ASST0/autoconf.h" ex="true" tool="3" flavor2="0">
+      </item>
+      <item path="kern/compile/ASST0/machine/asmdefs.h"
+            ex="true"
+            tool="3"
+            flavor2="0">
+      </item>
+      <item path="kern/compile/ASST0/machine/bus.h" ex="true" tool="3" flavor2="0">
+      </item>
+      <item path="kern/compile/ASST0/machine/ktypes.h" ex="true" tool="3" flavor2="0">
+      </item>
+      <item path="kern/compile/ASST0/machine/pcb.h" ex="true" tool="3" flavor2="0">
+      </item>
+      <item path="kern/compile/ASST0/machine/setjmp.h" ex="true" tool="3" flavor2="0">
+      </item>
+      <item path="kern/compile/ASST0/machine/specialreg.h"
+            ex="true"
+            tool="3"
+            flavor2="0">
+      </item>
+      <item path="kern/compile/ASST0/machine/spl.h" ex="true" tool="3" flavor2="0">
+      </item>
+      <item path="kern/compile/ASST0/machine/switchframe.h"
+            ex="true"
+            tool="3"
+            flavor2="0">
+      </item>
+      <item path="kern/compile/ASST0/machine/tlb.h" ex="true" tool="3" flavor2="0">
+      </item>
+      <item path="kern/compile/ASST0/machine/trapframe.h"
+            ex="true"
+            tool="3"
+            flavor2="0">
+      </item>
+      <item path="kern/compile/ASST0/machine/types.h" ex="true" tool="3" flavor2="0">
+      </item>
+      <item path="kern/compile/ASST0/machine/vm.h" ex="true" tool="3" flavor2="0">
+      </item>
+      <item path="kern/compile/ASST0/opt-A0.h" ex="true" tool="3" flavor2="0">
+      </item>
+      <item path="kern/compile/ASST0/opt-A1.h" ex="true" tool="3" flavor2="0">
+      </item>
+      <item path="kern/compile/ASST0/opt-A2.h" ex="true" tool="3" flavor2="0">
+      </item>
+      <item path="kern/compile/ASST0/opt-A3.h" ex="true" tool="3" flavor2="0">
+      </item>
+      <item path="kern/compile/ASST0/opt-A4.h" ex="true" tool="3" flavor2="0">
+      </item>
+      <item path="kern/compile/ASST0/opt-A5.h" ex="true" tool="3" flavor2="0">
+      </item>
+      <item path="kern/compile/ASST0/opt-dumbvm.h" ex="true" tool="3" flavor2="0">
+      </item>
+      <item path="kern/compile/ASST0/opt-net.h" ex="true" tool="3" flavor2="0">
+      </item>
+      <item path="kern/compile/ASST0/opt-netfs.h" ex="true" tool="3" flavor2="0">
+      </item>
+      <item path="kern/compile/ASST0/opt-sfs.h" ex="true" tool="3" flavor2="0">
+      </item>
+      <item path="kern/compile/ASST0/opt-synchprobs.h" ex="true" tool="3" flavor2="0">
+      </item>
+      <item path="kern/compile/ASST0/vers.c" ex="true" tool="0" flavor2="0">
+      </item>
+      <item path="kern/dev/generic/beep.c" ex="true" tool="0" flavor2="0">
+      </item>
+      <item path="kern/dev/generic/beep.h" ex="true" tool="3" flavor2="0">
+      </item>
+      <item path="kern/dev/generic/console.c" ex="true" tool="0" flavor2="0">
+      </item>
+      <item path="kern/dev/generic/console.h" ex="true" tool="3" flavor2="0">
+      </item>
+      <item path="kern/dev/generic/pseudorand.c" ex="true" tool="0" flavor2="0">
+      </item>
+      <item path="kern/dev/generic/pseudorand.h" ex="true" tool="3" flavor2="0">
+      </item>
+      <item path="kern/dev/generic/pseudorand_att.c" ex="true" tool="0" flavor2="0">
+      </item>
+      <item path="kern/dev/generic/random.c" ex="true" tool="0" flavor2="0">
+      </item>
+      <item path="kern/dev/generic/random.h" ex="true" tool="3" flavor2="0">
+      </item>
+      <item path="kern/dev/generic/rtclock.c" ex="true" tool="0" flavor2="0">
+      </item>
+      <item path="kern/dev/generic/rtclock.h" ex="true" tool="3" flavor2="0">
+      </item>
+      <item path="kern/dev/init.c" ex="true" tool="0" flavor2="0">
+      </item>
+      <item path="kern/dev/lamebus/beep_ltimer.c" ex="true" tool="0" flavor2="0">
+      </item>
+      <item path="kern/dev/lamebus/con_lscreen.c" ex="true" tool="0" flavor2="0">
+      </item>
+      <item path="kern/dev/lamebus/con_lser.c" ex="true" tool="0" flavor2="0">
+      </item>
+      <item path="kern/dev/lamebus/emu.c" ex="true" tool="0" flavor2="0">
+      </item>
+      <item path="kern/dev/lamebus/emu.h" ex="true" tool="3" flavor2="0">
+      </item>
+      <item path="kern/dev/lamebus/emu_att.c" ex="true" tool="0" flavor2="0">
+      </item>
+      <item path="kern/dev/lamebus/lamebus.c" ex="true" tool="0" flavor2="0">
+      </item>
+      <item path="kern/dev/lamebus/lamebus.h" ex="true" tool="3" flavor2="0">
+      </item>
+      <item path="kern/dev/lamebus/lhd.c" ex="true" tool="0" flavor2="0">
+      </item>
+      <item path="kern/dev/lamebus/lhd.h" ex="true" tool="3" flavor2="0">
+      </item>
+      <item path="kern/dev/lamebus/lhd_att.c" ex="true" tool="0" flavor2="0">
+      </item>
+      <item path="kern/dev/lamebus/lnet.c" ex="true" tool="0" flavor2="0">
+      </item>
+      <item path="kern/dev/lamebus/lnet_att.c" ex="true" tool="0" flavor2="0">
+      </item>
+      <item path="kern/dev/lamebus/lrandom.c" ex="true" tool="0" flavor2="0">
+      </item>
+      <item path="kern/dev/lamebus/lrandom.h" ex="true" tool="3" flavor2="0">
+      </item>
+      <item path="kern/dev/lamebus/lrandom_att.c" ex="true" tool="0" flavor2="0">
+      </item>
+      <item path="kern/dev/lamebus/lscreen.c" ex="true" tool="0" flavor2="0">
+      </item>
+      <item path="kern/dev/lamebus/lscreen.h" ex="true" tool="3" flavor2="0">
+      </item>
+      <item path="kern/dev/lamebus/lscreen_att.c" ex="true" tool="0" flavor2="0">
+      </item>
+      <item path="kern/dev/lamebus/lser.c" ex="true" tool="0" flavor2="0">
+      </item>
+      <item path="kern/dev/lamebus/lser.h" ex="true" tool="3" flavor2="0">
+      </item>
+      <item path="kern/dev/lamebus/lser_att.c" ex="true" tool="0" flavor2="0">
+      </item>
+      <item path="kern/dev/lamebus/ltimer.c" ex="true" tool="0" flavor2="0">
+      </item>
+      <item path="kern/dev/lamebus/ltimer.h" ex="true" tool="3" flavor2="0">
+      </item>
+      <item path="kern/dev/lamebus/ltimer_att.c" ex="true" tool="0" flavor2="0">
+      </item>
+      <item path="kern/dev/lamebus/ltrace.c" ex="true" tool="0" flavor2="0">
+      </item>
+      <item path="kern/dev/lamebus/ltrace.h" ex="true" tool="3" flavor2="0">
+      </item>
+      <item path="kern/dev/lamebus/ltrace_att.c" ex="true" tool="0" flavor2="0">
+      </item>
+      <item path="kern/dev/lamebus/random_lrandom.c" ex="true" tool="0" flavor2="0">
+      </item>
+      <item path="kern/dev/lamebus/rtclock_ltimer.c" ex="true" tool="0" flavor2="0">
+      </item>
+      <item path="kern/fs/sfs/sfs_fs.c" ex="true" tool="0" flavor2="0">
+      </item>
+      <item path="kern/fs/sfs/sfs_io.c" ex="true" tool="0" flavor2="0">
+      </item>
+      <item path="kern/fs/sfs/sfs_vnode.c" ex="true" tool="0" flavor2="0">
+      </item>
+      <item path="kern/fs/vfs/device.c" ex="true" tool="0" flavor2="0">
+      </item>
+      <item path="kern/fs/vfs/devnull.c" ex="true" tool="0" flavor2="0">
+      </item>
+      <item path="kern/fs/vfs/vfscwd.c" ex="true" tool="0" flavor2="0">
+      </item>
+      <item path="kern/fs/vfs/vfslist.c" ex="true" tool="0" flavor2="0">
+      </item>
+      <item path="kern/fs/vfs/vfslookup.c" ex="true" tool="0" flavor2="0">
+      </item>
+      <item path="kern/fs/vfs/vfspath.c" ex="true" tool="0" flavor2="0">
+      </item>
+      <item path="kern/fs/vfs/vnode.c" ex="true" tool="0" flavor2="0">
+      </item>
+      <item path="kern/include/addrspace.h" ex="true" tool="3" flavor2="0">
+      </item>
+      <item path="kern/include/array.h" ex="true" tool="3" flavor2="0">
+      </item>
+      <item path="kern/include/bitmap.h" ex="true" tool="3" flavor2="0">
+      </item>
+      <item path="kern/include/clock.h" ex="true" tool="3" flavor2="0">
+      </item>
+      <item path="kern/include/curthread.h" ex="true" tool="3" flavor2="0">
+      </item>
+      <item path="kern/include/dev.h" ex="true" tool="3" flavor2="0">
+      </item>
+      <item path="kern/include/elf.h" ex="true" tool="3" flavor2="0">
+      </item>
+      <item path="kern/include/emufs.h" ex="true" tool="3" flavor2="0">
+      </item>
+      <item path="kern/include/fs.h" ex="true" tool="3" flavor2="0">
+      </item>
+      <item path="kern/include/kern/callno.h" ex="true" tool="3" flavor2="0">
+      </item>
+      <item path="kern/include/kern/errmsg.h" ex="true" tool="3" flavor2="0">
+      </item>
+      <item path="kern/include/kern/errno.h" ex="true" tool="3" flavor2="0">
+      </item>
+      <item path="kern/include/kern/ioctl.h" ex="true" tool="3" flavor2="0">
+      </item>
+      <item path="kern/include/kern/limits.h" ex="true" tool="3" flavor2="0">
+      </item>
+      <item path="kern/include/kern/sfs.h" ex="true" tool="3" flavor2="0">
+      </item>
+      <item path="kern/include/kern/stat.h" ex="true" tool="3" flavor2="0">
+      </item>
+      <item path="kern/include/kern/types.h" ex="true" tool="3" flavor2="0">
+      </item>
+      <item path="kern/include/kern/unistd.h" ex="true" tool="3" flavor2="0">
+      </item>
+      <item path="kern/include/lib.h" ex="true" tool="3" flavor2="0">
+      </item>
+      <item path="kern/include/queue.h" ex="true" tool="3" flavor2="0">
+      </item>
+      <item path="kern/include/scheduler.h" ex="true" tool="3" flavor2="0">
+      </item>
+      <item path="kern/include/sfs.h" ex="true" tool="3" flavor2="0">
+      </item>
+      <item path="kern/include/stdarg.h" ex="true" tool="3" flavor2="0">
+      </item>
+      <item path="kern/include/synch.h" ex="true" tool="3" flavor2="0">
+      </item>
+      <item path="kern/include/syscall.h" ex="true" tool="3" flavor2="0">
+      </item>
+      <item path="kern/include/test.h" ex="true" tool="3" flavor2="0">
+      </item>
+      <item path="kern/include/thread.h" ex="true" tool="3" flavor2="0">
+      </item>
+      <item path="kern/include/types.h" ex="true" tool="3" flavor2="0">
+      </item>
+      <item path="kern/include/uio.h" ex="true" tool="3" flavor2="0">
+      </item>
+      <item path="kern/include/uw-vmstats.h" ex="true" tool="3" flavor2="0">
+      </item>
+      <item path="kern/include/version.h" ex="true" tool="3" flavor2="0">
+      </item>
+      <item path="kern/include/vfs.h" ex="true" tool="3" flavor2="0">
+      </item>
+      <item path="kern/include/vm.h" ex="true" tool="3" flavor2="0">
+      </item>
+      <item path="kern/include/vnode.h" ex="true" tool="3" flavor2="0">
+      </item>
+      <item path="kern/lib/array.c" ex="true" tool="0" flavor2="0">
+      </item>
+      <item path="kern/lib/bitmap.c" ex="true" tool="0" flavor2="0">
+      </item>
+      <item path="kern/lib/copyinout.c" ex="true" tool="0" flavor2="0">
+      </item>
+      <item path="kern/lib/kgets.c" ex="true" tool="0" flavor2="0">
+      </item>
+      <item path="kern/lib/kheap.c" ex="true" tool="0" flavor2="0">
+      </item>
+      <item path="kern/lib/kprintf.c" ex="true" tool="0" flavor2="0">
+      </item>
+      <item path="kern/lib/misc.c" ex="true" tool="0" flavor2="0">
+      </item>
+      <item path="kern/lib/ntoh.c" ex="true" tool="0" flavor2="0">
+      </item>
+      <item path="kern/lib/queue.c" ex="true" tool="0" flavor2="0">
+      </item>
+      <item path="kern/main/main.c" ex="true" tool="0" flavor2="0">
+      </item>
+      <item path="kern/main/menu.c" ex="true" tool="0" flavor2="0">
+      </item>
+      <item path="kern/test/arraytest.c" ex="true" tool="0" flavor2="0">
+      </item>
+      <item path="kern/test/bitmaptest.c" ex="true" tool="0" flavor2="0">
+      </item>
+      <item path="kern/test/fstest.c" ex="true" tool="0" flavor2="0">
+      </item>
+      <item path="kern/test/malloctest.c" ex="true" tool="0" flavor2="0">
+      </item>
+      <item path="kern/test/nettest.c" ex="true" tool="0" flavor2="0">
+      </item>
+      <item path="kern/test/queuetest.c" ex="true" tool="0" flavor2="0">
+      </item>
+      <item path="kern/test/synchtest.c" ex="true" tool="0" flavor2="0">
+      </item>
+      <item path="kern/test/threadtest.c" ex="true" tool="0" flavor2="0">
+      </item>
+      <item path="kern/test/tt3.c" ex="true" tool="0" flavor2="0">
+      </item>
+      <item path="kern/thread/hardclock.c" ex="true" tool="0" flavor2="0">
+      </item>
+      <item path="kern/thread/scheduler.c" ex="true" tool="0" flavor2="0">
+      </item>
+      <item path="kern/thread/synch.c" ex="true" tool="0" flavor2="0">
+      </item>
+      <item path="kern/thread/thread.c" ex="true" tool="0" flavor2="0">
+      </item>
+      <item path="kern/userprog/loadelf.c" ex="true" tool="0" flavor2="0">
+      </item>
+      <item path="kern/userprog/runprogram.c" ex="true" tool="0" flavor2="0">
+      </item>
+      <item path="kern/userprog/uio.c" ex="true" tool="0" flavor2="0">
+      </item>
+      <item path="kern/vm/addrspace.c" ex="true" tool="0" flavor2="0">
+      </item>
+      <item path="kern/vm/uw-vmstats.c" ex="true" tool="0" flavor2="0">
+      </item>
+      <item path="lib/crt0/mips-crt0.S" ex="true" tool="4" flavor2="0">
+      </item>
+      <item path="lib/libc/__printf.c" ex="true" tool="0" flavor2="0">
+      </item>
+      <item path="lib/libc/mips-setjmp.S" ex="true" tool="4" flavor2="0">
+      </item>
+      <item path="lib/libc/syscalls-mips.S" ex="true" tool="4" flavor2="0">
+      </item>
+      <item path="sbin/dumpsfs/disk.c" ex="false" tool="0" flavor2="0">
+        <cTool>
+          <incDir>
+            <pElem>../root/include</pElem>
+          </incDir>
+        </cTool>
+      </item>
+      <item path="sbin/dumpsfs/dumpsfs.c" ex="false" tool="0" flavor2="0">
+        <cTool>
+          <incDir>
+            <pElem>../root/hostinclude</pElem>
+          </incDir>
+          <preprocessorList>
+            <Elem>HOST</Elem>
+          </preprocessorList>
+        </cTool>
+      </item>
+      <item path="sbin/dumpsfs/support.c" ex="false" tool="0" flavor2="0">
+        <cTool>
+          <incDir>
+            <pElem>../root/include</pElem>
+          </incDir>
+        </cTool>
+      </item>
+      <item path="sbin/halt/halt.c" ex="true" tool="0" flavor2="0">
+      </item>
+      <item path="sbin/mksfs/disk.c" ex="false" tool="0" flavor2="0">
+        <cTool>
+          <incDir>
+            <pElem>../root/include</pElem>
+          </incDir>
+        </cTool>
+      </item>
+      <item path="sbin/mksfs/mksfs.c" ex="false" tool="0" flavor2="0">
+        <cTool>
+          <incDir>
+            <pElem>../root/hostinclude</pElem>
+          </incDir>
+          <preprocessorList>
+            <Elem>HOST</Elem>
+          </preprocessorList>
+        </cTool>
+      </item>
+      <item path="sbin/mksfs/support.c" ex="false" tool="0" flavor2="0">
+        <cTool>
+          <incDir>
+            <pElem>../root/include</pElem>
+          </incDir>
+        </cTool>
+      </item>
+      <item path="sbin/poweroff/poweroff.c" ex="true" tool="0" flavor2="0">
+      </item>
+      <item path="sbin/reboot/reboot.c" ex="true" tool="0" flavor2="0">
+      </item>
+      <item path="testbin/add/add.c" ex="true" tool="0" flavor2="0">
+      </item>
+      <item path="testbin/argtest/argtest.c" ex="true" tool="0" flavor2="0">
+      </item>
+      <item path="testbin/badcall/bad_execv.c" ex="true" tool="0" flavor2="0">
+      </item>
+      <item path="testbin/bigfile/bigfile.c" ex="true" tool="0" flavor2="0">
+      </item>
+      <item path="testbin/conman/conman.c" ex="true" tool="0" flavor2="0">
+      </item>
+      <item path="testbin/crash/crash.c" ex="true" tool="0" flavor2="0">
+      </item>
+      <item path="testbin/ctest/ctest.c" ex="true" tool="0" flavor2="0">
+      </item>
+      <item path="testbin/dirconc/dirconc.c" ex="true" tool="0" flavor2="0">
+      </item>
+      <item path="testbin/dirseek/dirseek.c" ex="true" tool="0" flavor2="0">
+      </item>
+      <item path="testbin/dirtest/dirtest.c" ex="true" tool="0" flavor2="0">
+      </item>
+      <item path="testbin/f_test/f_test.c" ex="true" tool="0" flavor2="0">
+      </item>
+      <item path="testbin/farm/farm.c" ex="true" tool="0" flavor2="0">
+      </item>
+      <item path="testbin/faulter/faulter.c" ex="true" tool="0" flavor2="0">
+      </item>
+      <item path="testbin/filetest/filetest.c" ex="true" tool="0" flavor2="0">
+      </item>
+      <item path="testbin/forkbomb/forkbomb.c" ex="true" tool="0" flavor2="0">
+      </item>
+      <item path="testbin/forktest/forktest.c" ex="true" tool="0" flavor2="0">
+      </item>
+      <item path="testbin/guzzle/guzzle.c" ex="true" tool="0" flavor2="0">
+      </item>
+      <item path="testbin/hog/hog.c" ex="true" tool="0" flavor2="0">
+      </item>
+      <item path="testbin/huge/huge.c" ex="true" tool="0" flavor2="0">
+      </item>
+      <item path="testbin/kitchen/kitchen.c" ex="true" tool="0" flavor2="0">
+      </item>
+      <item path="testbin/malloctest/malloctest.c" ex="true" tool="0" flavor2="0">
+      </item>
+      <item path="testbin/matmult/matmult-orig.c" ex="true" tool="0" flavor2="0">
+      </item>
+      <item path="testbin/matmult/matmult.c" ex="true" tool="0" flavor2="0">
+      </item>
+      <item path="testbin/palin/palin.c" ex="true" tool="0" flavor2="0">
+      </item>
+      <item path="testbin/parallelvm/parallelvm.c" ex="true" tool="0" flavor2="0">
+      </item>
+      <item path="testbin/rmdirtest/rmdirtest.c" ex="true" tool="0" flavor2="0">
+      </item>
+      <item path="testbin/rmtest/rmtest.c" ex="true" tool="0" flavor2="0">
+      </item>
+      <item path="testbin/romemwrite/romemwrite.c" ex="true" tool="0" flavor2="0">
+      </item>
+      <item path="testbin/sink/sink.c" ex="true" tool="0" flavor2="0">
+      </item>
+      <item path="testbin/sort/sort.c" ex="true" tool="0" flavor2="0">
+      </item>
+      <item path="testbin/sparse/sparse.c" ex="true" tool="0" flavor2="0">
+      </item>
+      <item path="testbin/sty/sty.c" ex="true" tool="0" flavor2="0">
+      </item>
+      <item path="testbin/tail/tail.c" ex="true" tool="0" flavor2="0">
+      </item>
+      <item path="testbin/tictac/tictac.c" ex="true" tool="0" flavor2="0">
+      </item>
+      <item path="testbin/tlbfaulter/tlbfaulter.c" ex="true" tool="0" flavor2="0">
+      </item>
+      <item path="testbin/triplehuge/triplehuge.c" ex="true" tool="0" flavor2="0">
+      </item>
+      <item path="testbin/triplemat/triplemat.c" ex="true" tool="0" flavor2="0">
+      </item>
+      <item path="testbin/triplesort/triplesort.c" ex="true" tool="0" flavor2="0">
+      </item>
+      <item path="testbin/userthreads/userthreads.c" ex="true" tool="0" flavor2="0">
+      </item>
+      <item path="uw-testbin/argtest/argtest.c" ex="true" tool="0" flavor2="0">
+      </item>
+      <item path="uw-testbin/common/funcs.c" ex="true" tool="0" flavor2="0">
+      </item>
+      <item path="uw-testbin/conc-io/conc-io.c" ex="true" tool="0" flavor2="0">
+      </item>
+      <item path="uw-testbin/files1/files1.c" ex="true" tool="0" flavor2="0">
+      </item>
+      <item path="uw-testbin/files2/files2.c" ex="true" tool="0" flavor2="0">
+      </item>
+      <item path="uw-testbin/lib/testutils.c" ex="true" tool="0" flavor2="0">
+      </item>
+      <item path="uw-testbin/lib/testutils.h" ex="true" tool="3" flavor2="0">
+      </item>
+      <item path="uw-testbin/segments/segments.c" ex="true" tool="0" flavor2="0">
+      </item>
+      <item path="uw-testbin/syscall/syscall.c" ex="true" tool="0" flavor2="0">
+      </item>
+      <item path="uw-testbin/vm-crash1/vm-crash1.c" ex="true" tool="0" flavor2="0">
+      </item>
+      <item path="uw-testbin/vm-crash2/vm-crash2.c" ex="true" tool="0" flavor2="0">
+      </item>
+      <item path="uw-testbin/vm-crash3/vm-crash3.c" ex="true" tool="0" flavor2="0">
+      </item>
+      <item path="uw-testbin/vm-data1/vm-data1.c" ex="true" tool="0" flavor2="0">
+      </item>
+      <item path="uw-testbin/vm-data2/vm-data2.c" ex="true" tool="0" flavor2="0">
+      </item>
+      <item path="uw-testbin/vm-data3/vm-data3.c" ex="true" tool="0" flavor2="0">
+      </item>
+      <item path="uw-testbin/vm-mix1-exec/vm-mix1-exec.c"
+            ex="true"
+            tool="0"
+            flavor2="0">
+      </item>
+      <item path="uw-testbin/vm-mix1-fork/vm-mix1-fork.c"
+            ex="true"
+            tool="0"
+            flavor2="0">
+      </item>
+      <item path="uw-testbin/vm-mix1/vm-mix1.c" ex="true" tool="0" flavor2="0">
+      </item>
+      <item path="uw-testbin/vm-mix2/vm-mix2.c" ex="true" tool="0" flavor2="0">
+      </item>
+      <item path="uw-testbin/vm-stack1/vm-stack1.c" ex="true" tool="0" flavor2="0">
+      </item>
+      <item path="uw-testbin/vm-stack2/vm-stack2.c" ex="true" tool="0" flavor2="0">
+      </item>
+      <item path="uw-testbin/writeread/writeread.c" ex="true" tool="0" flavor2="0">
+      </item>
+    </conf>
+  </confs>
+</configurationDescriptor>
