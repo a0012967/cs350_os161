@@ -1,24 +1,80 @@
 #include <types.h>
-#include
+#include <synch.h>
+#include <thread.h>
 #include <lib.h>
 //#include <errno.h>
 #include "opt-A2.h"
-#include <syscall.h>
-/*write writes up to buflen bytes to the file specified by fd, at the location in the file specified by the current seek position of the file, taking the data from the space pointed to by buf. The file must be open for writing.*/
-
+//#include <unistd.h>
+#include <uio.h>
+#include <vfs.h>
+#include <kern/unistd.h>
+#include <vnode.h>
+/*write writes up to buflen bytes to the file specified by fd, at the location in the file specified by the current 
+//seek position of the file, taking the data from the space pointed to by buf. The file must be open for writing.*/
 //Must ensure that we only allow one thread to do any of the syscalls
-volatile struct lock * syslock;
-syslock = lock_create("system_call_lock");
+volatile struct lock *syslock;
+
+static void init(){
+
+if(syslock ==NULL){
+    syslock = lock_create("sys_lock");
+    }
+
+}
+
 int
 write(int fd, const void *buf, size_t nbytes){
-    assert(syslock != NULL);
     
-    lock_acquire(syslock);
+    
+    
+    if(fd < 0){
+        
+        return 0xEBADF;
+        
+    }
+    
+    
+    
+    struct uio u_write;
+    mk_kuio(&u_write,buf,nbytes,0,UIO_WRITE);
+  
+    struct iovec iovec_write;
+    struct vnode *vn;
+    char *console = NULL;
+    console = kstrdup("con:");
+    int result = vfs_open(console,O_WRONLY,&vn);
+    
+    int result2 = VOP_WRITE(vn,&u_write);
+    
+    kfree(console);    
+    
+    if(result2){
+        
+        return result2;
+    }
+    
+    
+    
+    
+    
+    
+    
+   /* init();
+    
+    if(fd < 0){
+    
+    return 0xEBADF;
+    }
+    
+    //All errors should be returned before we access critical section
+    //lock_acquire(syslock);
+    
+    
     size_t i = 0;
     
-    char buffer_chars = (char *)buf; //cast bif which is void * to char *
+    const char* buffer_chars = (const char *)buf; //cast bif which is void * to char *
     
-    while(i<nbyts){
+    while(i<nbytes){
       
       putch(buffer_chars[i]);
       i++;
@@ -26,11 +82,11 @@ write(int fd, const void *buf, size_t nbytes){
     }
     
     
-    lock_release(syslock);
+    //lock_release(syslock);
     
     
     
-    
+    */
     
    return 0;
     
