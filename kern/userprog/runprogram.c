@@ -14,15 +14,18 @@
 #include <vm.h>
 #include <vfs.h>
 #include <test.h>
-
+#include "opt-A2.h"
 /*
  * Load program "progname" and start running it in usermode.
  * Does not return except on error.
  *
  * Calls vfs_open on progname and thus may destroy it.
  */
-int
-runprogram(char *progname)
+#if OPT_A2
+int runprogram(char *progname,char **argv,int argc)
+#else
+int runprogram(char *progname)
+#endif
 {
 	struct vnode *v;
 	vaddr_t entrypoint, stackptr;
@@ -65,12 +68,34 @@ runprogram(char *progname)
 		return result;
 	}
 
+    
+#if OPT_A2
 	/* Warp to user mode. */
+    
+    userptr_t* u_args;
+    stackptr -= sizeof(char*)*(argc+1);
+    copyout(argv,u_args,sizeof(char*)*(argc+1));
+    
+    int i;
+    for(i = 0; i < argc;i++){
+        
+        stackptr -= sizeof(char*)*(strlen(argv[i])+1);
+        copyout(argv[i],stackptr,sizeof(char*)*(strlen(argv[i])+1));
+        
+        
+    }
+    
+    stackptr =stackptr - (stackptr % 8);
+    
+
+    md_usermode(argc, u_args,stackptr, entrypoint);
+#else
 	md_usermode(0 /*argc*/, NULL /*userspace addr of argv*/,
 		    stackptr, entrypoint);
 	
 	/* md_usermode does not return */
-	panic("md_usermode returned\n");
+#endif
+    panic("md_usermode returned\n");
 	return EINVAL;
 }
 
