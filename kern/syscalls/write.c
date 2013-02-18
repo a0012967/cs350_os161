@@ -2,7 +2,7 @@
 #include <synch.h>
 #include <thread.h>
 #include <lib.h>
-//#include <errno.h>
+#include <kern/errno.h>
 #include "opt-A2.h"
 //#include <unistd.h>
 #include <uio.h>
@@ -25,14 +25,21 @@ if(syslock ==NULL){
 int
 write(int fd, const void *buf, size_t nbytes){
     
-    
+    vaddr_t bot,top;
+    bot = (vaddr_t) buf;
+    top = bot + nbytes -1;
     
     if(fd < 0){
         
-        return 0xEBADF;
+        return EBADF;
         
     }
-    
+    if(top < bot){
+        
+        return EFAULT;
+    }
+    //init();
+    //lock_acquire(syslock);
     
     
     struct uio u_write;
@@ -48,12 +55,14 @@ write(int fd, const void *buf, size_t nbytes){
     
     kfree(console);    
     
+    
+    //lock_release(syslock);
     if(result2){
         
         return result2;
     }
     
-    
+
     
     
     
