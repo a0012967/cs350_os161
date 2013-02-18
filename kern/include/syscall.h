@@ -6,6 +6,7 @@
  */
 
 int sys_reboot(int code);
+int write(int fd, const void *buf, size_t nbytes);
 
 
 #endif /* _SYSCALL_H_ */
