@@ -67,6 +67,7 @@ runprogram(char *progname, char** argv, int argc)
         
         unsigned int i;
         unsigned int j;
+        int err;
         
         for (i = 0; i < argc; i++) // copyout the array values
         {
@@ -75,23 +76,13 @@ runprogram(char *progname, char** argv, int argc)
             unsigned int len = strlen(argv[j]); // length of actual string
             unsigned int modArg = (len+1)%4;    // mod 4
             unsigned int totalLen = len+1+(4-modArg); // total correct alignment length(multiple of 4)
-            char argPadding[totalLen]; // array for storing arguments with padding
-            
-            strcpy(argPadding, argv[j]);
-            
-            if (modArg != 0) // we need to pad
-            {
-                // padding with '\0'
-                unsigned int k;
-                for (k = len+1; k < totalLen; k++)
-                    argPadding[k] = '\0';
-            }
             
             stackptr = stackptr-totalLen;
+
+            if ((err = copyoutstr(argv[j], stackptr, len+1, &totalLen)) != 0)
+                kprintf("ERROR copyoutstr %d\n", err);
+            
             argv[j] = stackptr; // fill argv with actual user space ptr
-            
-            copyout(&argPadding, stackptr, totalLen);
-            
         }
         
         for (i = 0; i <= argc; i++) // copyout the array addresses
@@ -99,10 +90,9 @@ runprogram(char *progname, char** argv, int argc)
             j = argc-i;
             stackptr = stackptr-4;
             
-            if (i == 0)
-               copyout(NULL, stackptr, 4);
-            else
-               copyout(&argv[j], stackptr, 4);
+            if ((err = copyout(&argv[j], stackptr, 4)) != 0)
+                kprintf("ERROR copyout %d\n", err);
+             
         }
         
 	/* Warp to user mode. */
