@@ -115,6 +115,9 @@ lock_create(const char *name)
 		return NULL;
 	}
 	
+	//modified
+	lock->thread = NULL;
+	
 	// add stuff here as needed
 	
 	return lock;
@@ -140,12 +143,12 @@ lock_acquire(struct lock *lock)
         assert (lock != NULL);
         
         spl = splhigh();
-        
+        //if(lock->thread != NULL) kprintf("lock not null thread null: %d name: %s\n", lock->thread,lock->name);
         while (lock->thread != NULL) 
         {
             thread_sleep(lock);
         }
-        
+      //  kprintf("lock acqure success: %d\n",lock->name);
         lock->thread = curthread;
         
         splx(spl);
