@@ -14,7 +14,7 @@
 #include <vm.h>
 #include <vfs.h>
 #include <test.h>
-
+#include "opt-A2.h"
 /*
  * Load program "progname" and start running it in usermode.
  * Does not return except on error.
@@ -64,11 +64,12 @@ runprogram(char *progname, char** argv, int argc)
 		/* thread_exit destroys curthread->t_vmspace */
 		return result;
 	}
-        
+
         unsigned int i;
         unsigned int j;
         int err;
         
+
         for (i = 0; i < argc; i++) // copyout the array values
         {
             j = argc-(i+1);
@@ -101,6 +102,17 @@ runprogram(char *progname, char** argv, int argc)
 	
 	/* md_usermode does not return */
 	panic("md_usermode returned\n");
+
+    }
+
+#else
+	md_usermode(0 /*argc*/, NULL /*userspace addr of argv*/,
+		    stackptr, entrypoint);
+	
+	/* md_usermode does not return */
+#endif
+    panic("md_usermode returned\n");
+
 	return EINVAL;
 }
 
