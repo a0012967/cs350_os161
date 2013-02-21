@@ -13,13 +13,9 @@
 /*write writes up to buflen bytes to the file specified by fd, at the location in the file specified by the current 
 //seek position of the file, taking the data from the space pointed to by buf. The file must be open for writing.*/
 //Must ensure that we only allow one thread to do any of the syscalls
-<<<<<<< Updated upstream
 
-//Yi making a silly comment to check if git is working, please delete for next version.
-volatile struct lock *syslock;
-=======
 volatile struct lock *syslock = NULL;
->>>>>>> Stashed changes
+
 
 static void init(){
 

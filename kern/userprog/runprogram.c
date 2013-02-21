@@ -64,7 +64,7 @@ runprogram(char *progname, char** argv, int argc)
 		/* thread_exit destroys curthread->t_vmspace */
 		return result;
 	}
-
+#if OPT_A2
         unsigned int i;
         unsigned int j;
         int err;
@@ -103,11 +103,10 @@ runprogram(char *progname, char** argv, int argc)
 	/* md_usermode does not return */
 	panic("md_usermode returned\n");
 
-    }
+    
 
 #else
-	md_usermode(0 /*argc*/, NULL /*userspace addr of argv*/,
-		    stackptr, entrypoint);
+	md_usermode(0 /*argc*/, NULL /*userspace addr of argv*/,stackptr, entrypoint);
 	
 	/* md_usermode does not return */
 #endif
