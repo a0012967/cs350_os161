@@ -72,7 +72,7 @@ cmd_progthread(void *ptr, unsigned long nargs)
 
 
 #if OPT_A2
-    result = runprogram(progname, args+1, nargs);
+    result = runprogram(progname, args, nargs);
 #else
     result = runprogram(progname);
 #endif
