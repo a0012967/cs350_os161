@@ -69,36 +69,48 @@ runprogram(char *progname, char** argv, int argc)
         unsigned int j;
         int err;
         
-
-        for (i = 0; i < argc; i++) // copyout the array values
+        if (argc > 1)
         {
-            j = argc-(i+1);
-            
-            unsigned int len = strlen(argv[j]); // length of actual string
-            unsigned int modArg = (len+1)%4;    // mod 4
-            unsigned int totalLen = len+1+(4-modArg); // total correct alignment length(multiple of 4)
-            
-            stackptr = stackptr-totalLen;
+            for (i = 0; i < argc; i++) // copyout the array values
+            {
+                j = argc-(i+1);
 
-            if ((err = copyoutstr(argv[j], stackptr, len+1, &totalLen)) != 0)
-                kprintf("ERROR copyoutstr %d\n", err);
-            
-            argv[j] = stackptr; // fill argv with actual user space ptr
+                unsigned int len = strlen(argv[j]); // length of actual string
+                unsigned int modArg = (len+1)%4;    // mod 4
+                unsigned int totalLen = len+1+(4-modArg); // total correct alignment length(multiple of 4)
+
+                stackptr = stackptr-totalLen;
+
+                if ((err = copyoutstr(argv[j], stackptr, len+1, &totalLen)) != 0)
+                    kprintf("ERROR copyoutstr %d\n", err);
+
+                argv[j] = stackptr; // fill argv with actual user space ptr
+            }
+
+            int kargc = argc;
+            if (((0x80000000-stackptr)+(4*argc))%8 != 0)
+                kargc++;
+
+            for (i = 0; i < kargc; i++) // copyout the array addresses
+            {
+                j = argc-i;
+                stackptr = stackptr-4;
+
+                if ((err = copyout(&argv[j], stackptr, 4)) != 0)
+                    kprintf("ERROR copyout %d\n", err);
+
+            }
+
+            /* Warp to user mode. */
+            md_usermode(argc /*argc*/, stackptr /*userspace addr of argv*/,
+                        stackptr, entrypoint);
         }
-        
-        for (i = 0; i <= argc; i++) // copyout the array addresses
+        else
         {
-            j = argc-i;
-            stackptr = stackptr-4;
-            
-            if ((err = copyout(&argv[j], stackptr, 4)) != 0)
-                kprintf("ERROR copyout %d\n", err);
-             
+            /* Warp to user mode. */
+            md_usermode(0 /*argc*/, NULL /*userspace addr of argv*/,
+                        stackptr, entrypoint);
         }
-        
-	/* Warp to user mode. */
-	md_usermode(argc /*argc*/, stackptr /*userspace addr of argv*/,
-		    stackptr, entrypoint);
 	
 	/* md_usermode does not return */
 	panic("md_usermode returned\n");
