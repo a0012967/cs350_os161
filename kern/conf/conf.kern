@@ -456,8 +456,10 @@ optfile net	test/nettest.c
 defoption A0
 defoption A1
 defoption A2
-	file syscalls/write.c
-	file syscalls/_exit.c
+	file syscalls/process_syscall.c
+	file syscalls/process_syscall.c
+	file syscalls/process.c
+	file syscalls/fileDescriptor.c
 # UW For A3 use the stats tracking code provided
 defoption A3
    file    vm/uw-vmstats.c
