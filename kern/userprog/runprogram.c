@@ -15,6 +15,20 @@
 #include <vfs.h>
 #include <test.h>
 #include "opt-A2.h"
+
+/*
+ * Calculates the padding length needed for a particular
+ * string. Total length should be a multiple of 4
+ */
+static unsigned int 
+calc_align_length(char *argv)
+{
+    unsigned int argvlen = strlen(argv)+1; // length of actual string including '\0'
+    unsigned int paddinglen = 4-(argvlen%4);    // mod 4
+    
+    return argvlen+paddinglen; // total correct alignment length(multiple of 4)
+}
+
 /*
  * Load program "progname" and start running it in usermode.
  * Does not return except on error.
@@ -65,9 +79,12 @@ runprogram(char *progname, char** argv, int argc)
 		return result;
 	}
 #if OPT_A2
+        vaddr_t initialptr = stackptr;
         unsigned int i;
-        unsigned int j;
+        unsigned int j; // i reversed index
         int err;
+        
+        unsigned int alignlen; // length of argument with correct mod4 alignment
         
         if (argc > 1)
         {
@@ -75,23 +92,17 @@ runprogram(char *progname, char** argv, int argc)
             {
                 j = argc-(i+1);
 
-                unsigned int len = strlen(argv[j]); // length of actual string
-                unsigned int modArg = (len+1)%4;    // mod 4
-                unsigned int totalLen = len+1+(4-modArg); // total correct alignment length(multiple of 4)
+                alignlen = calc_align_length(argv[j]);
 
-                stackptr = stackptr-totalLen;
+                stackptr = stackptr-alignlen;
 
-                if ((err = copyoutstr(argv[j], stackptr, len+1, &totalLen)) != 0)
+                if ((err = copyoutstr(argv[j], stackptr, strlen(argv[j])+1, &alignlen)) != 0)
                     kprintf("ERROR copyoutstr %d\n", err);
 
                 argv[j] = stackptr; // fill argv with actual user space ptr
             }
 
-            int kargc = argc;
-            if (((0x80000000-stackptr)+(4*argc))%8 != 0)
-                kargc++;
-
-            for (i = 0; i < kargc; i++) // copyout the array addresses
+            for (i = 0; i <= argc; i++) // copyout the array addresses
             {
                 j = argc-i;
                 stackptr = stackptr-4;

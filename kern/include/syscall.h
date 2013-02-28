@@ -9,7 +9,6 @@
 
 int sys_reboot(int code);
 
-/*
 #if OPT_A2
 int sys_open(userptr_t filename, int flags, int mode, int *retval);
 int sys_close(int fd);

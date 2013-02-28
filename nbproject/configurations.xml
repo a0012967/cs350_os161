@@ -2,8 +2,6 @@
 <configurationDescriptor version="84">
   <logicalFolder name="root" displayName="root" projectFiles="true" kind="ROOT">
     <df name="os161-1.11" root=".">
-      <df name=".sockets">
-      </df>
       <df name="bin">
         <df name="cat">
           <in>cat.c</in>
@@ -173,6 +171,36 @@
             <in>opt-synchprobs.h</in>
             <in>vers.c</in>
           </df>
+          <df name="ASST2">
+            <df name="machine">
+              <in>asmdefs.h</in>
+              <in>bus.h</in>
+              <in>ktypes.h</in>
+              <in>pcb.h</in>
+              <in>setjmp.h</in>
+              <in>specialreg.h</in>
+              <in>spl.h</in>
+              <in>switchframe.h</in>
+              <in>tlb.h</in>
+              <in>trapframe.h</in>
+              <in>types.h</in>
+              <in>vm.h</in>
+            </df>
+            <in>autoconf.c</in>
+            <in>autoconf.h</in>
+            <in>opt-A0.h</in>
+            <in>opt-A1.h</in>
+            <in>opt-A2.h</in>
+            <in>opt-A3.h</in>
+            <in>opt-A4.h</in>
+            <in>opt-A5.h</in>
+            <in>opt-dumbvm.h</in>
+            <in>opt-net.h</in>
+            <in>opt-netfs.h</in>
+            <in>opt-sfs.h</in>
+            <in>opt-synchprobs.h</in>
+            <in>vers.c</in>
+          </df>
         </df>
         <df name="conf">
         </df>
@@ -292,6 +320,10 @@
         <df name="main">
           <in>main.c</in>
           <in>menu.c</in>
+        </df>
+        <df name="syscalls">
+          <in>_exit.c</in>
+          <in>write.c</in>
         </df>
         <df name="test">
           <in>arraytest.c</in>

@@ -457,9 +457,9 @@ defoption A0
 defoption A1
 defoption A2
 	file syscalls/process_syscall.c
-	file syscalls/process_syscall.c
 	file syscalls/process.c
 	file syscalls/fileDescriptor.c
+        file syscalls/file_syscall.c
 # UW For A3 use the stats tracking code provided
 defoption A3
    file    vm/uw-vmstats.c

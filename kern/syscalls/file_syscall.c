@@ -10,7 +10,7 @@
 #include <kern/unistd.h>
 #include <vnode.h>
 #include <curthread.h>
-#include <file_syscall.h>
+#include <syscall.h>
 #include "opt-A2.h"
 /*write writes up to buflen bytes to the file specified by fd, at the location in the file specified by the current 
 //seek position of the file, taking the data from the space pointed to by buf. The file must be open for writing.*/
@@ -152,11 +152,11 @@ int sys_open(userptr_t filename, int flags, int mode, int *retval) {
     result = copyinstr(filename, copy_filename, sizeof(copy_filename), NULL);
     
     if (result) {
-        return Result;
+        return result;
     }
     
     //opens via fd table
-    return fdtable_open(fname, flags, retval);
+    return fd_table_open(filename, flags, retval);
     
     (void) mode; //supress mode in A2
 }
@@ -180,7 +180,7 @@ void _exit(int exitcode)
     splhigh();
     
     //scheduler_shutdown();
-    thread_shutdown();
+    thread_exit();
 }
 
 

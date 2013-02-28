@@ -6,7 +6,6 @@
 #include <machine/trapframe.h>
 #include <kern/callno.h>
 #include <syscall.h>
-#include <file_syscall.h>
 #include "opt-A2.h"
 /*
  * System call handler.
