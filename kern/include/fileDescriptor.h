@@ -1,9 +1,10 @@
-#include <vnode.h>
+#ifndef _fileDescriptor_H_
+#define _fileDescriptor_H_
 #include <kern/limits.h>
 #include <types.h>
 
 #include "opt-A2.h"
-
+#include <vnode.h>
 
 #if OPT_A2
 
@@ -17,6 +18,7 @@ struct file {
     int permission; // Remembers what flag file was opened with. Important for read/write
     off_t offset; // file pointer offset
     int ref_count;
+    int flag;
     struct vnode *vn; //pointer to actual file
 };
 
@@ -46,3 +48,4 @@ int fd_table_create();
 void fd_table_destroy();
 
 #endif /* _OPT_A2 */
+#endif //define

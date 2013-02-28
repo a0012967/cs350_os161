@@ -1,6 +1,5 @@
 #include <types.h>
 #include <synch.h>
-#include <syscall.h>
 #include <thread.h>
 #include <lib.h>
 #include <kern/errno.h>
@@ -9,8 +8,9 @@
 #include <uio.h>
 #include <vfs.h>
 #include <kern/unistd.h>
-//#include <vnode.h>
+#include <vnode.h>
 #include <curthread.h>
+#include <file_syscall.h>
 #include "opt-A2.h"
 /*write writes up to buflen bytes to the file specified by fd, at the location in the file specified by the current 
 //seek position of the file, taking the data from the space pointed to by buf. The file must be open for writing.*/
@@ -168,6 +168,20 @@ int sys_close(int fd) {
     return fd_table_close(fd);
 }
 
+void _exit(int exitcode)
+{
+    (void)exitcode;
+    kprintf("Shutting down.\n");
+	
+    //vfs_clearbootfs();
+    //vfs_clearcurdir();
+    //vfs_unmountall();
+    
+    splhigh();
+    
+    //scheduler_shutdown();
+    thread_shutdown();
+}
 
 
 #endif /* _OPT_A2_ */

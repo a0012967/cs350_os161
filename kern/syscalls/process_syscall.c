@@ -28,7 +28,7 @@ void proctable_init(struct process *t,int len){
 }
 */
 #if OPT_A2
-
+/*
 void _exit(int exitcode)
 {
     (void)exitcode;
@@ -42,9 +42,9 @@ void _exit(int exitcode)
     
     //scheduler_shutdown();
     thread_shutdown();
-}
+}*/
 
-
+/*
 pid_t getpid(){
    /* int i;
     for(i = 0; i<MAX_PROCESS; i++){
@@ -58,7 +58,7 @@ pid_t getpid(){
     }
     
     return (pid_t)(-1);
-    */
-}
+
+}*/
 
 #endif /* _OPT_A2_ */

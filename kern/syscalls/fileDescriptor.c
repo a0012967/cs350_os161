@@ -11,6 +11,7 @@
 #include <kern/limits.h>
 #include <kern/stat.h>
 #include <syscall.h>
+#include <fileDescriptor.h>
 #include "opt-A2.h"
 
 #if OPT_A2
@@ -22,20 +23,20 @@ int fd_table_create() {
     if (t == NULL) {
         return ENOMEM;
     }
-    
+    int i;
     //Initial value of table is NULL
-    for (int i = 0; i < MAX_FILE_OPEN; i++) {
+    for (i = 0; i < MAX_FILE_OPEN; i++) {
         t->fds[i] = NULL;
     }
     
-    cuthread->t_fdtable = t; //assign table to curthread
+    curthread->t_fdtable = t; //assign table to curthread
     
     
     //create file descriptors stdin, stdout and stderr for consoles
-    for (int i = 0; i < 3; i++) {
+    for (i = 0; i < 3; i++) {
         strcpy(path, "con:");
         //I'm pretty sure this is wrong, someone check this later: ASSUMING std in/out/err is rw, should check this later
-        result = fd_table_open(path, ORDWR, &fd);
+        result = fd_table_open(path, O_RDWR, &fd);
         if (result) {
             return result;
         }
@@ -53,7 +54,7 @@ int fd_table_open(char *name, int flag, int *retval) {
     //set next available file descriptor
     struct fd_table *t = curthread->t_fdtable;
     for (fd = 0; fd < MAX_FILE_OPEN; fd++) {
-        if (t->entry[fd] == NULL) {
+        if (t->fds[fd] == NULL) {
             break;
         }
     }
@@ -113,27 +114,27 @@ int fd_table_get(int fd, struct file **retval) {
     struct fd_table *t = curthread->t_fdtable;
     
     // check if fields are valid
-    if (fd < 0 || fd >= OPEN_MAX) {
+    if (fd < 0 || fd >= MAX_FILE_OPEN) {
         return EBADF;
     }
     if (t->fds[fd] == NULL) {
         EBADF;
     }
     
-    found entry!
+    //found entry!
     *retval = t->fds[fd];
     return 0;
     
 }
 
 void fd_table_destroy() {
-    struct fd_table *t = cuthread->t_fdtable;
+    struct fd_table *t = curthread->t_fdtable;
     
-    if (table == NULL) {
+    if (t == NULL) {
         return;
     }
-    
-    for (int i=0; i<MAX_FILE_OPEN; i++) {
+    int i;
+    for (i=0; i<MAX_FILE_OPEN; i++) {
         if (t->fds[i] != NULL) {
             fd_table_close(i);
         }

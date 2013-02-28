@@ -7,7 +7,7 @@
 
 /* Get machine-dependent stuff */
 #include <machine/pcb.h>
-
+#include "opt-A2.h"
 
 struct addrspace;
 
@@ -37,6 +37,14 @@ struct thread {
 	 * and is manipulated by the virtual filesystem (VFS) code.
 	 */
 	struct vnode *t_cwd;
+    
+#if OPT_A2
+    /*
+     Assignment 2
+     file descriptor table
+     */
+    struct fd_table* t_fdtable;//size = MAX_FILE_OPEN in fd_table.h
+#endif /* OPT_A2 */
 };
 
 /* Call once during startup to allocate data structures. */
