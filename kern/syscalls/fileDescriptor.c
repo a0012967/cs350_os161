@@ -29,7 +29,7 @@ int fd_table_create() {
         t->fds[i] = NULL;
     }
     
-    curthread->t_fdtable = t; //assign table to curthread
+    curthread->t_process->table = t; //assign table to curthread
     
     
     //create file descriptors stdin, stdout and stderr for consoles
@@ -52,7 +52,7 @@ int fd_table_open(char *name, int flag, int *retval) {
     int fd;
     
     //set next available file descriptor
-    struct fd_table *t = curthread->t_fdtable;
+    struct fd_table *t = curthread->t_process->table;
     for (fd = 0; fd < MAX_FILE_OPEN; fd++) {
         if (t->fds[fd] == NULL) {
             break;
@@ -83,7 +83,7 @@ int fd_table_open(char *name, int flag, int *retval) {
     }
     
     //set current table slot
-    curthread->t_fdtable->fds[fd] = f;
+    curthread->t_process->table->fds[fd] = f;
     
     *retval = fd;
     return 0;

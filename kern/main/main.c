@@ -16,6 +16,7 @@
 #include <vm.h>
 #include <syscall.h>
 #include <version.h>
+#include "opt-A2.h"
 
 /*
  * These two pieces of data are maintained by the makefiles and build system.
@@ -72,6 +73,11 @@ boot(void)
 
 	ram_bootstrap();
 	scheduler_bootstrap();
+    
+#if OPT_A2
+    proctable_init();
+#endif /* _OPT_A2_ */
+    
 	thread_bootstrap();
 	vfs_bootstrap();
 	dev_bootstrap();
