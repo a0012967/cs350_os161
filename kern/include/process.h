@@ -24,14 +24,16 @@ struct process {
                             // proc_lock outside of the struct, see below.
     struct process* parent;
 };
+ 
 
 /*
  Yi:
  changed proctable to an array of pointers to process. This makes checking parents easier. Also makes more sense when we're looking at proctable from a thread's point of view. Please change it if you don't want points.
+ 
+ **NOTE, static struct process **proctable; was moved to process.c
  */
 
-struct process **proctable;
- 
+
 
 /*
  Yi: Instead of having a proc_lock in each process lock, we should have one that guards all the processes. A lock for each process is not very useful, we need something to manage all processes.

@@ -13,6 +13,8 @@
 #include <addrspace.h>
 #include <vnode.h>
 #include "opt-synchprobs.h"
+#include "opt-A2.h"
+
 
 /* States a thread can be in. */
 typedef enum {
@@ -62,6 +64,9 @@ thread_create(const char *name)
 	// If you add things to the thread structure, be sure to initialize
 	// them here.
 	
+#if OPT_A2
+    thread->t_process = NULL;
+#endif /* _OPT_A2_ */
 	return thread;
 }
 

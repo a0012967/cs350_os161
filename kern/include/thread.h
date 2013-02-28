@@ -8,6 +8,7 @@
 /* Get machine-dependent stuff */
 #include <machine/pcb.h>
 #include "opt-A2.h"
+#include <process.h>
 
 struct addrspace;
 
@@ -41,9 +42,9 @@ struct thread {
 #if OPT_A2
     /*
      Assignment 2
-     file descriptor table
+     pointer to thread's process
      */
-    struct fd_table* t_fdtable;//size = MAX_FILE_OPEN in fd_table.h
+    struct process* t_process; //size = MAX_OPEN in process.h
 #endif /* OPT_A2 */
 };
 

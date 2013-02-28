@@ -46,7 +46,7 @@ void _exit(int exitcode)
 
 /*
 pid_t getpid(){
-   /* int i;
+    int i;
     for(i = 0; i<MAX_PROCESS; i++){
         
         if(proctable[i]->me == curthread){//Yi: should proctable[i].me be a thread? If so, we should start using pointers.
