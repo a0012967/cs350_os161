@@ -103,7 +103,7 @@ int fd_table_close(int fd) {
     if (f->ref_count == 0) { // no longer used by anyone
         vfs_close(f->vn);
         kfree(f);
-        curthread->t_fdtable->fds[fd] = NULL;
+        curthread->t_process->table->fds[fd] = NULL;
     }
     return 0;
     
@@ -111,7 +111,7 @@ int fd_table_close(int fd) {
 
 int fd_table_get(int fd, struct file **retval) {
     
-    struct fd_table *t = curthread->t_fdtable;
+    struct fd_table *t = curthread->t_process->table->fds[fd];
     
     // check if fields are valid
     if (fd < 0 || fd >= MAX_FILE_OPEN) {
@@ -128,7 +128,7 @@ int fd_table_get(int fd, struct file **retval) {
 }
 
 void fd_table_destroy() {
-    struct fd_table *t = curthread->t_fdtable;
+    struct fd_table *t = curthread->t_process->table;
     
     if (t == NULL) {
         return;
