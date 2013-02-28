@@ -13,7 +13,7 @@
  changed proctable to an array of pointers to process. This makes checking parents easier. Also makes more sense when we're looking at proctable from a thread's point of view. Please change it if you don't want points.
  */
 
-static struct process **proctable;
+//static struct process **proctable;
 
 
 //Initialize proctable, do this in main (during boot?)
