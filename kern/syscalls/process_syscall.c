@@ -16,8 +16,6 @@
 #include <process.h>
 #include "opt-A2.h"
 
-
-
 /*
  //plese see process.c
 void proctable_init(struct process *t,int len){
@@ -28,37 +26,18 @@ void proctable_init(struct process *t,int len){
 }
 */
 #if OPT_A2
-/*
-void _exit(int exitcode)
-{
-    (void)exitcode;
-    kprintf("Shutting down.\n");
-	
-    //vfs_clearbootfs();
-    //vfs_clearcurdir();
-    //vfs_unmountall();
-    
-    splhigh();
-    
-    //scheduler_shutdown();
-    thread_shutdown();
-}*/
-
-/*
 pid_t getpid(){
     int i;
     for(i = 0; i<MAX_PROCESS; i++){
         
-        if(proctable[i]->me == curthread){//Yi: should proctable[i].me be a thread? If so, we should start using pointers.
+        if(proctable[i]->PID == curthread) {
             
             return proctable[i]->PID;
-        }
-        
-        
+        }  
     }
     
     return (pid_t)(-1);
 
-}*/
+}
 
 #endif /* _OPT_A2_ */
