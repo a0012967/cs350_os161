@@ -12,6 +12,7 @@
 #include <curthread.h>
 #include <syscall.h>
 #include "opt-A2.h"
+#include <fileDescriptor.h>
 /*write writes up to buflen bytes to the file specified by fd, at the location in the file specified by the current 
 //seek position of the file, taking the data from the space pointed to by buf. The file must be open for writing.*/
 //Must ensure that we only allow one thread to do any of the syscalls
@@ -24,7 +25,7 @@
  Carl, I put in a fd table lock called fd_lock in process.h, maybe we can coordinate that lock for all the file syscalls?
  */
 volatile struct lock *syslock = NULL;
-volatile int offset = 0;
+//volatile int offset = 0;
 
 
 static void init(){
@@ -42,7 +43,8 @@ write(int fd, const void *buf, size_t nbytes){
     bot = (vaddr_t) buf;
     top = bot + nbytes -1;
     
-    if(fd < 0 || !buf){
+    if(fd < 0|| fd >= MAX_FILE_OPEN /*|| curthread->t_fdtable[fd]== NULL || (curthread->t_fdtable)->fds[fd]->flag != O_WRONLY  */
+       ){
         
         return EBADF;
         
@@ -57,6 +59,7 @@ write(int fd, const void *buf, size_t nbytes){
    
     
     struct uio u_write; //used to hold data to write
+   // int offset = (curthread->t_process)->table[fd]->offset;
     mk_kuio(&u_write,buf,nbytes,0,UIO_WRITE);
   
     struct iovec iovec_write;
@@ -76,7 +79,12 @@ write(int fd, const void *buf, size_t nbytes){
  
     if(result2){
         
-        return -1; //should also return EIO and ENOSPC
+        return result2; //should also return EIO and ENOSPC
+    }
+    
+    if(result){
+        
+        return result; //should also return EIO and ENOSPC
     }
 
 
@@ -110,10 +118,10 @@ int read(int fd, void *buf, size_t nbytes){
     
     init();
     
-    
+    //    int offset = (curthread->t_fdtable)->fds[fd]->flag;
     
     struct uio u_read; //used to hold data to write
-    mk_kuio(&u_read,buf,nbytes,offset,UIO_READ);
+    mk_kuio(&u_read,buf,nbytes,0,UIO_READ);
     
     struct iovec iovec_write;
     struct vnode *vn;

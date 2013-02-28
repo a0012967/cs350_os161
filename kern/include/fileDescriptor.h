@@ -18,7 +18,7 @@ struct file {
     int permission; // Remembers what flag file was opened with. Important for read/write
     off_t offset; // file pointer offset
     int ref_count;
-    int flag;
+    int flag; //O_RD etc
     struct vnode *vn; //pointer to actual file
 };
 
