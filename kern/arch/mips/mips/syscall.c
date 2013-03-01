@@ -78,6 +78,11 @@ mips_syscall(struct trapframe *tf)
             case SYS__exit:
                 _exit(tf->tf_a0);
                 break;
+                
+            case SYS_waitpid:
+                retval = waitpid(tf->tf_a0, &(tf->tf_a1), tf->tf_a2, &err);
+                break;
+                
 	    /* Add stuff here */
 #endif
 	    default:

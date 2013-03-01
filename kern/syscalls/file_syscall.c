@@ -11,6 +11,7 @@
 #include <vnode.h>
 #include <curthread.h>
 #include <syscall.h>
+#include <process.h>
 #include "opt-A2.h"
 #include <fileDescriptor.h>
 /*write writes up to buflen bytes to the file specified by fd, at the location in the file specified by the current 
@@ -179,8 +180,11 @@ int sys_close(int fd) {
 void _exit(int exitcode)
 {
     (void)exitcode;
-    kprintf("Shutting down.\n");
+    kprintf("Exiting...\n");
 	
+    // exit process - uncomment later
+    //exit_process(curthread->t_process->PID, exitcode);
+    
     //vfs_clearbootfs();
     //vfs_clearcurdir();
     //vfs_unmountall();
