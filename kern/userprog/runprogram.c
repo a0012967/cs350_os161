@@ -79,6 +79,26 @@ runprogram(char *progname, char** argv, int argc)
 		return result;
 	}
 #if OPT_A2
+    
+    
+    //Initialize the Process & put it onto proctable
+    lock_acquire(proc_lock);
+    struct process *new_processs = add_process_new();
+    if (new_processs == NULL) {
+        return EAGAIN; // error occured
+    } else {
+        curthread->t_process = new_processs;
+    }
+    
+    //Initialize fd table
+    result = fd_table_create();
+    if (result) {
+        return result; // Error occured
+    }
+    
+    lock_release(proc_lock);
+    
+    //Argument passing
         vaddr_t initialptr = stackptr;
         unsigned int i;
         unsigned int j; // i reversed index
