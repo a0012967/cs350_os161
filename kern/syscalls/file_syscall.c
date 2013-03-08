@@ -1,4 +1,4 @@
-#include <types.h>
+ #include <types.h>
 #include <synch.h>
 #include <thread.h>
 #include <lib.h>
@@ -38,28 +38,31 @@ if(syslock ==NULL){
 
 int
 write(int fd, const void *buf, size_t nbytes){
-    
+    /*
     vaddr_t bot,top;
     bot = (vaddr_t) buf;
     top = bot + nbytes -1;
-    
+    */
     if(fd < 0|| fd >= MAX_FILE_OPEN /*|| curthread->t_fdtable[fd]== NULL || (curthread->t_fdtable)->fds[fd]->flag != O_WRONLY  */
        ){
-        
+    
         return EBADF;
         
     }
-    if(top < bot || !buf){
+    /*if(top < bot || !buf){
         
         return EFAULT;
-    }
+    }*/
     
     init();
     
    
     
     struct uio u_write; //used to hold data to write
-   // int offset = (curthread->t_process)->table[fd]->offset;
+    //int offset = curthread->t_process->table->fds[fd]->offset;
+    
+    //kprintf("offset is %d\n",offset);
+    //offset =0;
     mk_kuio(&u_write,buf,nbytes,0,UIO_WRITE);
   
     struct iovec iovec_write;
@@ -100,27 +103,28 @@ write(int fd, const void *buf, size_t nbytes){
 
 
 int read(int fd, void *buf, size_t nbytes){
-    
+    //curthread->t_process->table[fd].offset
     
     vaddr_t bot,top;
     bot = (vaddr_t) buf;
     top = bot + nbytes -1;
     
-    if(fd < 0 || !buf){
+    if(fd < 0 ){
         
         return EBADF;
         
     }
-    if(top < bot || !buf){
+    if(/*top < bot ||*/ !buf){
         
         return EFAULT;
     }
     
     init();
     
-    //    int offset = (curthread->t_fdtable)->fds[fd]->flag;
+    //    int offset = (curthread->t_fdtable)->fds[fd]->offset;
     
     struct uio u_read; //used to hold data to write
+    
     mk_kuio(&u_read,buf,nbytes,0,UIO_READ);
     
     struct iovec iovec_write;
@@ -151,7 +155,7 @@ int read(int fd, void *buf, size_t nbytes){
 
 
 // Opens a file using fd table
-int sys_open(userptr_t filename, int flags, int mode, int *retval) {
+int sys_open(userptr_t filename, int flags, int mode, int * retval) {
     
     int result;
     char copy_filename[PATH_MAX];
