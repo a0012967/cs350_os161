@@ -19,6 +19,10 @@ struct process {
     int exit_code;
     int exit; //if exited,1 else 0
     
+    // locks and cvs for waitpid
+    struct cv* exit_cv;
+    struct lock* exit_lock; // lock for checking whether process exited or not
+    
     struct fd_table* table; 
     struct cv* proc_cv;
     struct lock* fd_lock; // Yi: I need a lock for fd_table :) Moved old 

@@ -51,6 +51,11 @@ struct process *add_process_new()   {
     new->PID = my_pid;
     //new->exit_code=???;
     new->exit=0; // 0 = running
+    
+    // initialize exit lock and cv for waitpid
+    new->exit_lock = lock_create("lock to check if process exited");
+    new->exit_cv = cv_create("cv for wait on process to exit");
+    
     new->table=NULL;
     new->proc_cv = cv_create("cv for a process");
     new->fd_lock = lock_create("file descriptor table lock");
@@ -87,6 +92,11 @@ struct process *add_process_child(struct process* parent)   {
     new->PID = my_pid;
     //new->exit_code=???;
     new->exit=0; // 0 = running
+    
+    // initialize exit lock and cv for waitpid
+    new->exit_lock = lock_create("lock to check if process exited");
+    new->exit_cv = cv_create("cv for wait on process to exit");
+    
     new->table=NULL;
     new->proc_cv = cv_create("cv for a process");
     new->fd_lock = lock_create("file descriptor table lock");
@@ -100,6 +110,9 @@ struct process *add_process_child(struct process* parent)   {
 int remove_process(pid_t pid)   {
     struct process *kill = proctable[pid];
     
+    lock_destroy(kill->exit_lock);
+    cv_destroy(kill->exit_cv);
+    
     lock_destroy(kill->fd_lock);
     kfree(kill);
     proctable[pid]=NULL;
@@ -110,9 +123,13 @@ int remove_process(pid_t pid)   {
 int exit_process(pid_t pid, int exitcode)   {
     struct process *e = proctable[pid];
     
+    lock_acquire(e->exit_lock);
+    
     e->exit_code = exitcode;
     e->exit = 1;
+    cv_broadcast(e->exit_cv, e->exit_lock);
     
+    lock_release(e->exit_lock);
     
     //let my child know that I have exited.
     if (e->parent != NULL) {
