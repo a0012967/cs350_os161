@@ -118,6 +118,10 @@ mips_syscall(struct trapframe *tf)
 	assert(curspl==0);
 }
 
+#if OPT_A2
+    /* moved md_forkentry to process_syscall.c*/
+#else
+
 void
 md_forkentry(struct trapframe *tf)
 {
@@ -130,3 +134,4 @@ md_forkentry(struct trapframe *tf)
 
 	(void)tf;
 }
+#endif /* _OPT_A2_ */

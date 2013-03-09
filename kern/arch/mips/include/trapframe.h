@@ -1,6 +1,6 @@
 #ifndef _MIPS_TRAPFRAME_H_
 #define _MIPS_TRAPFRAME_H_
-
+#include "opt-A2.h"
 /*
  * Structure describing what is saved on the stack during entry to
  * the exception handler.
@@ -72,6 +72,9 @@ struct trapframe {
  * happen.
  */
 void mips_usermode(struct trapframe *tf);
+#if OPT_A2
+void md_forkentry(void *data1, unsigned long data2);
+#else
 void md_forkentry(struct trapframe *tf);
-
+#endif /* _OPT_A2_ */
 #endif /* _MIPS_TRAPFRAME_H_ */
