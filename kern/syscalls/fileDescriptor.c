@@ -36,7 +36,10 @@ int fd_table_create() {
     for (i = 0; i < 3; i++) {
         strcpy(path, "con:");
         //I'm pretty sure this is wrong, someone check this later: ASSUMING std in/out/err is rw, should check this later
-        result = fd_table_open(path, O_RDWR, &fd);
+        //Opens the special fd automatically
+        if(i == 0) result = fd_table_open(path, O_RDONLY, &fd);
+        if(i == 1) result = fd_table_open(path, O_WRONLY, &fd);
+        if(i == 2) result = fd_table_open(path, O_WRONLY, &fd);
         if (result) {
             return result;
         }

@@ -39,26 +39,23 @@ if(syslock ==NULL){
 
 int
 write(int fd, const void *buf, size_t nbytes){
-    /*
-    vaddr_t bot,top;
-    bot = (vaddr_t) buf;
-    top = bot + nbytes -1;
-    */
-    if(fd < 0|| fd >= MAX_FILE_OPEN || curthread->t_process->table->fds[fd]== NULL ||(curthread->t_process->table->fds[fd]->flag != O_WRONLY && curthread->t_process->table->fds[fd]->flag != O_RDWR )){
-   /*     kprintf("fd is %d, size is %d\n", fd,(int)nbytes);
+    
+    if(fd < 0|| fd >= MAX_FILE_OPEN || curthread->t_process->table->fds[fd]== NULL /*||(curthread->t_process->table->fds[fd]->flag != O_WRONLY && curthread->t_process->table->fds[fd]->flag != O_RDWR )*/){
+       /* kprintf("write, fd is %d, size is %d\n", fd,(int)nbytes);
         kprintf("maxfile open cond: %d\n",fd >= MAX_FILE_OPEN);
         int bool1 = curthread->t_process->table->fds[fd]== NULL;
         kprintf("1st bool: %d\n",bool1);
         int bool2 = curthread->t_process->table->fds[fd]->flag != O_WRONLY;
         kprintf("2nd bool: %d, flag: %d\n",bool2,curthread->t_process->table->fds[fd]->flag);
         int bool3 = curthread->t_process->table->fds[fd]->flag != O_RDWR;
-        kprintf("3rd bool: %d\n",bool3);*/
+        kprintf("3rd bool: %d\n",bool3);
+        */ 
         return EBADF;
         
        
         
     }
-    if(/*top < bot ||*/ !buf){
+    if(!buf){
         
         return EFAULT;
     }
@@ -69,35 +66,21 @@ write(int fd, const void *buf, size_t nbytes){
     
     struct uio u_write; //used to hold data to write
     int offset = curthread->t_process->table->fds[fd]->offset;
-    
-    //kprintf("offset is %d\n",offset);
-    //offset =0;
-    //char *buffer = (char *)kmalloc(nbytes);
-    
-    //int copresult = copyin((userptr_t)buf,buffer,nbytes);
-    //kprintf("copresult: %d, length: %d\n",copresult,nbytes);
     mk_kuio(&u_write,buf,nbytes,offset,UIO_WRITE);
-    
     struct vnode *vn = curthread->t_process->table->fds[fd]->vn;
-    
-    
     lock_acquire(syslock);
    
     //int result = vfs_open(console,O_WRONLY,&vn);
     
     int result2 = VOP_WRITE(vn,&u_write);
-   // kprintf("write result2 is: %d\n",result2);
+  
         lock_release(syslock);    
-       
-   // kfree(buffer);    
  
     if(result2){
         
         return result2; //should also return EIO and ENOSPC
     }
     
-    
-
     curthread->t_process->table->fds[fd]->offset =  u_write.uio_resid;
 
  
@@ -117,8 +100,8 @@ int read(int fd, void *buf, size_t nbytes){
     bot = (vaddr_t) buf;
     top = bot + nbytes -1;
     
-    if(fd < 0 || fd >= MAX_FILE_OPEN || curthread->t_process->table->fds[fd]== NULL ||( curthread->t_process->table->fds[fd]->flag != O_RDONLY && curthread->t_process->table->fds[fd]->flag != O_RDWR )){
-     /*   kprintf("fd is %d, size is %d\n", fd,(int)nbytes);
+    if(fd < 0 || fd >= MAX_FILE_OPEN || curthread->t_process->table->fds[fd]== NULL /*||( curthread->t_process->table->fds[fd]->flag != O_RDONLY && curthread->t_process->table->fds[fd]->flag != O_RDWR )*/){
+        /*kprintf("read, fd is %d, size is %d\n", fd,(int)nbytes);
         kprintf("maxfile open cond: %d\n",fd >= MAX_FILE_OPEN);
         int bool1 = curthread->t_process->table->fds[fd]== NULL;
         kprintf("1st bool: %d\n",bool1);
@@ -142,7 +125,7 @@ int read(int fd, void *buf, size_t nbytes){
     struct uio u_read; //used to hold data to read
  
     mk_kuio(&u_read,buf,nbytes,offset,UIO_READ);
-    
+   
     struct vnode *vn = curthread->t_process->table->fds[fd]->vn;
     lock_acquire(syslock);
 
@@ -194,6 +177,9 @@ int sys_close(int fd) {
 
 void _exit(int exitcode, int * retval)
 {
+    
+    assert(curthread != NULL);
+    
     
     //exit_process(curthread->t_process->PID,exitcode);
     

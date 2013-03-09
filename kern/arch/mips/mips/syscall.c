@@ -74,9 +74,20 @@ mips_syscall(struct trapframe *tf)
             case SYS_write:
                 err = write(tf->tf_a0, tf->tf_a1, tf->tf_a2);
                 break;
+            case SYS_read:
+            err =0;
+                 retval = read(tf->tf_a0, tf->tf_a1, tf->tf_a2);
+                break;
                 
             case SYS__exit:
-                _exit(tf->tf_a0);
+                _exit(tf->tf_a0,&retval);
+                break;
+            case SYS_open:
+                err =sys_open((userptr_t)tf->tf_a0, tf->tf_a1, tf->tf_a2,&retval);
+                break;
+            
+            case SYS_close:
+                err = sys_close(tf->tf_a0);
                 break;
                 
             case SYS_waitpid:
@@ -117,21 +128,8 @@ mips_syscall(struct trapframe *tf)
 	/* Make sure the syscall code didn't forget to lower spl */
 	assert(curspl==0);
 }
+/*
+void md_forkentry(void *data1, unsigned long data2){
 
-#if OPT_A2
-    /* moved md_forkentry to process_syscall.c*/
-#else
-
-void
-md_forkentry(struct trapframe *tf)
-{
-	/*
-	 * This function is provided as a reminder. You need to write
-	 * both it and the code that calls it.
-	 *
-	 * Thus, you can trash it and do things another way if you prefer.
-	 */
-
-	(void)tf;
 }
-#endif /* _OPT_A2_ */
+*/
