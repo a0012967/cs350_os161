@@ -14,6 +14,7 @@
 #include <process.h>
 #include "opt-A2.h"
 #include <fileDescriptor.h>
+#include <file_syscall.h>
 /*write writes up to buflen bytes to the file specified by fd, at the location in the file specified by the current 
 //seek position of the file, taking the data from the space pointed to by buf. The file must be open for writing.*/
 //Must ensure that we only allow one thread to do any of the syscalls
@@ -93,7 +94,7 @@ write(int fd, const void *buf, size_t nbytes){
 
 
 
-int read(int fd, void *buf, size_t nbytes){
+int read(int fd, void *buf, size_t nbytes, int *err){
     //curthread->t_process->table[fd].offset
     
     vaddr_t bot,top;
@@ -135,13 +136,13 @@ int read(int fd, void *buf, size_t nbytes){
  
     
     if(result2){
-        
-        return result2; //should also return EIO and ENOSPC
+        *err = result2; //should also return EIO and ENOSPC
+        return -1; 
     }
     
     
     curthread->t_process->table->fds[fd]->offset = u_read.uio_resid;
-    
+    *err = 0; //success
     return nbytes - u_read.uio_resid; //returns how many were written
 }
 

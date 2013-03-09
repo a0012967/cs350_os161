@@ -13,8 +13,8 @@ int sys_reboot(int code);
 int sys_open(userptr_t filename, int flags, int mode, int *retval);
 int sys_close(int fd);
 int write(int fd, const void *buf, size_t nbytes);
-int read(int fd, void *buf, size_t nbytes);
-void _exit(int exitcode);
+int read(int fd, void *buf, size_t nbytes,int *err);
+void _exit(int exitcode,int *retval);
 #endif /* _OPT_A2_ */
 
 #endif /* _SYSCALL_H_ */

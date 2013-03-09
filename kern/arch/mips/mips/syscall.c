@@ -75,8 +75,8 @@ mips_syscall(struct trapframe *tf)
                 err = write(tf->tf_a0, tf->tf_a1, tf->tf_a2);
                 break;
             case SYS_read:
-            err =0;
-                 retval = read(tf->tf_a0, tf->tf_a1, tf->tf_a2);
+            
+                 retval = read(tf->tf_a0, tf->tf_a1, tf->tf_a2,&err);
                 break;
                 
             case SYS__exit:
