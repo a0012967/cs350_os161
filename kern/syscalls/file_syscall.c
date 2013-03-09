@@ -176,13 +176,37 @@ int sys_close(int fd) {
     return fd_table_close(fd);
 }
 
+//checks to see if a process has exited
+int process_exited(struct process* proc){
+	
+	return proc->exit;
+
+}
+
 void _exit(int exitcode, int * retval)
 {
     
     assert(curthread != NULL);
     
+    //check to see if parent is NULL or exited
+    if(curthread->t_process->parent == NULL || process_exited(curthread->t_process->parent)){
+    	//dont care who we report too
+    	thread_exit();
     
-    //exit_process(curthread->t_process->PID,exitcode);
+ }//if
+    //curthread->t_process->exit_code = exitcode;
+    
+    //free the fd stuff
+    int i;
+    lock_acquire(syslock);
+    
+
+      
+      
+    exit_process(curthread->t_process->PID,exitcode);
+    assert(curthread->t_process->exit_code == exitcode);
+    
+    lock_release(syslock);
     
   //  *retval = exitcode;
     (void)exitcode;
@@ -196,9 +220,9 @@ void _exit(int exitcode, int * retval)
     //vfs_unmountall();
     
     splhigh();
-    
-    //scheduler_shutdown();
     thread_exit();
+    //scheduler_shutdown();
+    
 }
 
 
