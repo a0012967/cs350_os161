@@ -122,6 +122,8 @@ runprogram(char *progname, char** argv, int argc)
                 argv[j] = stackptr; // fill argv with actual user space ptr
             }
 
+            argv[argc] = NULL; // ensure last argument point to NULL
+            
             for (i = 0; i <= argc; i++) // copyout the array addresses
             {
                 j = argc-i;
@@ -131,7 +133,7 @@ runprogram(char *progname, char** argv, int argc)
                     kprintf("ERROR copyout %d\n", err);
 
             }
-
+            
             /* Warp to user mode. */
             md_usermode(argc /*argc*/, stackptr /*userspace addr of argv*/,
                         stackptr, entrypoint);
