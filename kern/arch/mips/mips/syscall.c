@@ -93,6 +93,19 @@ mips_syscall(struct trapframe *tf)
             case SYS_waitpid:
                 retval = waitpid(tf->tf_a0, &(tf->tf_a1), tf->tf_a2, &err);
                 break;
+               
+            case SYS_getpid:
+                retval = getpid();
+                err = 0;
+                break;
+                
+            case SYS_fork:
+                err = sys_fork(tf, &retval);
+                break;
+            /*    
+            case SYS_execv:
+                err = execv(tf->tf_a0, tf->tf_a1, &retval);
+                break;*/
                 
 	    /* Add stuff here */
 #endif

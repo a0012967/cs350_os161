@@ -7,7 +7,7 @@
 #include <clock.h>
 #include <syscall.h>
 #include <machine/trapframe.h>
-#include <addrspace.h>
+#include <opt-dumbvm.h>
 #include <test.h>
 #include <vm.h>
 #include <vfs.h>
@@ -222,6 +222,7 @@ int sys_fork(struct trapframe *tf, int * retval)    {
         *retval = -1;
         return EAGAIN;
     } else  {
+        *retval = 0;
         return 0;
     }
     
