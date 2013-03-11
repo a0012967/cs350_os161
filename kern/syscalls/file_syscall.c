@@ -126,12 +126,12 @@ int read(int fd, void *buf, size_t nbytes, int *err){
     struct uio u_read; //used to hold data to read
  
     mk_kuio(&u_read,buf,nbytes,offset,UIO_READ);
-   
+    
     struct vnode *vn = curthread->t_process->table->fds[fd]->vn;
     lock_acquire(syslock);
-
+    kprintf("preparing to read\n");
     int result2 = VOP_READ(vn,&u_read);
-
+    kprintf("read succesfful\n");
     lock_release(syslock);    
  
     

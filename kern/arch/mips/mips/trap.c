@@ -7,7 +7,7 @@
 #include <vm.h>
 #include <thread.h>
 #include <curthread.h>
-
+#include "opt-A2.h"
 extern u_int32_t curkstack;
 
 /* in exception.S */
@@ -45,8 +45,13 @@ kill_curthread(u_int32_t epc, unsigned code, u_int32_t vaddr)
 	/*
 	 * You will probably want to change this.
 	 */
+#if OPT_A2
     _exit(code);
+#else
+
 	panic("I don't know how to handle this\n");
+#endif
+
 }
 
 /*
@@ -141,8 +146,13 @@ mips_trap(struct trapframe *tf)
 		 * The MIPS won't even tell you what invalid address
 		 * caused the bus error.
 		 */
+            
+#if OPT_A2
+            _exit(code);
+#else
 		panic("Bus error exception, PC=0x%x\n", tf->tf_epc);
-		break;
+#endif
+            break;
 	}
 
 	/*
@@ -189,14 +199,17 @@ mips_trap(struct trapframe *tf)
 	/*
 	 * Really fatal kernel-mode fault.
 	 */
-
+#if OPT_A2
+    _exit(code);
+    
+#else
 	kprintf("panic: Fatal exception %u (%s) in kernel mode\n", code,
 		trapcodenames[code]);
 	kprintf("panic: EPC 0x%x, exception vaddr 0x%x\n", 
 		tf->tf_epc, tf->tf_vaddr);
 
 	panic("I can't handle this... I think I'll just die now...\n");
-
+#endif
  done:
 	/* Make sure interrupts are off */
 	splhigh();
