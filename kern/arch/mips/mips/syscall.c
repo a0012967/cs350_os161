@@ -7,6 +7,7 @@
 #include <kern/callno.h>
 #include <syscall.h>
 #include "opt-A2.h"
+
 /*
  * System call handler.
  *
@@ -72,7 +73,8 @@ mips_syscall(struct trapframe *tf)
 		break;
 #if OPT_A2
             case SYS_write:
-                err = write(tf->tf_a0, tf->tf_a1, tf->tf_a2);
+                err = write(tf->tf_a0, tf->tf_a1, tf->tf_a2,&retval);
+                
                 break;
             case SYS_read:
             
@@ -101,6 +103,7 @@ mips_syscall(struct trapframe *tf)
                 
             case SYS_fork:
                 err = sys_fork(tf, &retval);
+            //kprintf("err is: %d, retval is: %d\n",err,(int)retval);
                 break;
             /*    
             case SYS_execv:
@@ -142,7 +145,15 @@ mips_syscall(struct trapframe *tf)
 	assert(curspl==0);
 }
 /*
-void md_forkentry(void *data1, unsigned long data2){
-
+void md_forkentry(struct trapframe *tf){
+   #if OPT_A2
+   //sets up the trap frame so the child trapframe looks like a successful fork
+   tf->tf_a3 = 0; //error
+	tf->tf_v0 = 0; //return val
+	tf->tf_epc += 4; // set pc ahead to avoid child from calling fork again and again
+   #else
+	(void)tf;
+	#endif
 }
+
 */
