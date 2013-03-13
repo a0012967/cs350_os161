@@ -106,8 +106,8 @@ runprogram(char *progname, char** argv, int argc)
         
         unsigned int alignlen; // length of argument with correct mod4 alignment
         
-        if (argc > 1)
-        {
+        //if (argc > 1)
+        //{
             for (i = 0; i < argc; i++) // copyout the array values
             {
                 j = argc-(i+1);
@@ -137,13 +137,13 @@ runprogram(char *progname, char** argv, int argc)
             /* Warp to user mode. */
             md_usermode(argc /*argc*/, stackptr /*userspace addr of argv*/,
                         stackptr, entrypoint);
-        }
-        else
-        {
+        //}
+        //else
+        //{
             /* Warp to user mode. */
-            md_usermode(0 /*argc*/, NULL /*userspace addr of argv*/,
-                        stackptr, entrypoint);
-        }
+            //md_usermode(1 /*argc*/, NULL /*userspace addr of argv*/,
+              //          stackptr, entrypoint);
+        //}
 	
 	/* md_usermode does not return */
 	panic("md_usermode returned\n");

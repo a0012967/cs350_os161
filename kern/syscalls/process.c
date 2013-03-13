@@ -120,14 +120,17 @@ int remove_process(pid_t pid)   {
 }
 
 // process's exit = 1.
-int exit_process(pid_t pid, int exitcode)   {
+int exit_process(pid_t pid, int exitcode) {
+    
     struct process *e = proctable[pid];
     
     lock_acquire(e->exit_lock);
     
     e->exit_code = exitcode;
     e->exit = 1;
-    cv_broadcast(e->exit_cv, e->exit_lock);
+    
+    if (e->parent != NULL)
+       cv_signal(e->exit_cv, e->exit_lock);
     
     lock_release(e->exit_lock);
     

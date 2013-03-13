@@ -1,7 +1,7 @@
 #ifndef _process_H
 #define _process_H
 #include <synch.h>
-#include <fileDescriptor.h>
+
 #include <types.h>
 #include "opt-A2.h"
 
@@ -35,7 +35,7 @@ struct process {
  Yi:
  changed proctable to an array of pointers to process. This makes checking parents easier. Also makes more sense when we're looking at proctable from a thread's point of view. Please change it if you don't want points.
  */
-static struct process **proctable;
+struct process **proctable;
  
 
 
