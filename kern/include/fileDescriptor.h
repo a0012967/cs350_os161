@@ -40,12 +40,15 @@ int fd_table_open(char *name, int flag, int *retval);
 
 // Close file and remove from table
 int fd_table_close(int fd);
+int fd_table_close_me(int fd, struct fd_table *t);
 
 // gets entry from table
 int fd_table_get(int fd, struct file **retval);
+int fd_table_get_me(int fd, struct file **retval, struct fd_table *t);
 
 int fd_table_create();
 void fd_table_destroy();
+void fd_table_destroy_me(struct fd_table* t);
 
 #endif /* _OPT_A2 */
 #endif //define

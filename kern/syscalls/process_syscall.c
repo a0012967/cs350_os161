@@ -101,7 +101,9 @@ pid_t waitpid(pid_t pid, int *status, int options, int *errno)
             //kprintf("released");
         }
         *status = kid_process->exit_code;
+        //kprintf(".");
         remove_process(kid_process->PID);//destroy the kid
+        //kprintf("#");
         lock_release(proc_lock);
         return pid;
     }
@@ -202,7 +204,7 @@ md_forkentry(void *data1, unsigned long data2) { // data1 = fork_setup monitor
 int sys_fork(struct trapframe *tf, int * retval)    {
     
     //set up fork_setup struct to keep track of fork progress
-    kprintf(".");
+    //kprintf(".");
     struct fork_setup judge;
     judge.child_sem = sem_create("fork sem", 0); // don't let parent go until child V this
     if (judge.child_sem == NULL)  {
