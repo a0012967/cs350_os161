@@ -126,7 +126,7 @@ int remove_process(pid_t pid)   {
     
     //lock_destroy(kill->exit_lock);
     //cv_destroy(kill->exit_cv);
-    
+    //fd_table_destroy_me(kill->table);
     lock_destroy(kill->fd_lock);
     kfree(kill);
     proctable[pid]=NULL;

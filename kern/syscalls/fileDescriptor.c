@@ -112,6 +112,27 @@ int fd_table_close(int fd) {
     
 }
 
+int fd_table_close_me(int fd, struct fd_table *t) {
+    struct file *f;
+    int result;
+    //get entry from table
+    result = fd_table_get_me(fd, &f, t);
+    if (result) {
+        return result;
+    }
+    
+    f->ref_count--;
+    
+    if (f->ref_count == 0) { // no longer used by anyone
+        vfs_close(f->vn);
+        kfree(f);
+        t->fds[fd] = NULL;
+    }
+    return 0;
+    
+}
+
+
 int fd_table_get(int fd, struct file **retval) {
     
     struct fd_table *t = curthread->t_process->table->fds[fd];
@@ -130,6 +151,20 @@ int fd_table_get(int fd, struct file **retval) {
     
 }
 
+int fd_table_get_me(int fd, struct file **retval, struct fd_table *t) {
+    // check if fields are valid
+    if (fd < 0 || fd >= MAX_FILE_OPEN) {
+        return EBADF;
+    }
+    if (t->fds[fd] == NULL) {
+        EBADF;
+    }
+    
+    //found entry!
+    *retval = t->fds[fd];
+    return 0;
+}
+
 void fd_table_destroy() {
     struct fd_table *t = curthread->t_process->table;
     
@@ -140,6 +175,22 @@ void fd_table_destroy() {
     for (i=0; i<MAX_FILE_OPEN; i++) {
         if (t->fds[i] != NULL) {
             fd_table_close(i);
+        }
+    }
+    
+    kfree(t);
+}
+
+void fd_table_destroy_me(struct fd_table* t) {
+    
+    
+    if (t == NULL) {
+        return;
+    }
+    int i;
+    for (i=0; i<MAX_FILE_OPEN; i++) {
+        if (t->fds[i] != NULL) {
+            fd_table_close_me(i, t);
         }
     }
     
