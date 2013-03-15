@@ -34,12 +34,12 @@ void _exit(int exitcode, int * retval)
     lock_acquire(curthread->t_process->exit_lock); // This probably won't work, because the parent might be holding the lock -> deadlock
     
     
-    fdtable_destroy(); // I think we should destroy this first, because vnode has ref_count value and we want to make sure that is correct ASAP (--)
+    fd_table_destroy(); // I think we should destroy this first, because vnode has ref_count value and we want to make sure that is correct ASAP (--)
     
     if (curthread->t_process->parent == NULL)   { // if I have no parent
         if (remove_process(curthread->t_process->PID) != 0) {
             //didn't remove properly, should we return some Eerror?
-        
+            
         } else { // I have a parent!
             if (exit_process(curthread->t_process->PID, exitcode))  {
                 //again, should we return some error?

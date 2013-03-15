@@ -80,7 +80,7 @@ mips_syscall(struct trapframe *tf)
                 break;
                 
             case SYS__exit:
-                _exit(tf->tf_a0,&retval);
+                _exit(tf->tf_a0,&err);
                 break;
             case SYS_open:
                 err =sys_open((userptr_t)tf->tf_a0, tf->tf_a1, tf->tf_a2,&retval);
@@ -91,7 +91,7 @@ mips_syscall(struct trapframe *tf)
                 break;
                 
             case SYS_waitpid:
-                retval = waitpid(tf->tf_a0, &(tf->tf_a1), tf->tf_a2, &err);
+                retval = waitpid(tf->tf_a0, &tf->tf_a1, tf->tf_a2, &err);
                 break;
                
             case SYS_getpid:
@@ -122,11 +122,13 @@ mips_syscall(struct trapframe *tf)
 		 * userlevel to a return value of -1 and the error
 		 * code in errno.
 		 */
+        //kprintf("s");
 		tf->tf_v0 = err;
 		tf->tf_a3 = 1;      /* signal an error */
 	}
 	else {
 		/* Success. */
+        
 		tf->tf_v0 = retval;
 		tf->tf_a3 = 0;      /* signal no error */
 	}

@@ -13,6 +13,7 @@
 #include <syscall.h>
 #include <process.h>
 #include "opt-A2.h"
+#include "opt-dumbvm.h"
 #include <fileDescriptor.h>
 #include <file_syscall.h>
 /*write writes up to buflen bytes to the file specified by fd, at the location in the file specified by the current 
@@ -178,32 +179,46 @@ int process_exited(struct process* proc){
 }
 
 void _exit(int exitcode, int * retval)
-{  
-    // exiting process here doesn't work, exit immediately
-    thread_exit();
+{    
+   
+    lock_acquire(proc_lock); // get parent's lock
+   
     
-    /*
-    assert(curthread != NULL);
+    fd_table_destroy();
     
-    //check to see if parent is NULL or exited
-    if(curthread->t_process == NULL || curthread->t_process->parent == NULL || process_exited(curthread->t_process->parent)){
-    	//dont care who we report too
-    	thread_exit();
+     
+     struct cv *kid_cv = curthread->t_process->exit_cv;
     
-    }//if
-    
-    //free the fd stuff
-    int i;
-    lock_acquire(syslock);
-         
-    exit_process(curthread->t_process->PID,exitcode);
-    assert(curthread->t_process->exit_code == exitcode);
-    
-    lock_release(syslock);
+     if (curthread->t_process->parent == NULL)   {
+        //I'm a root, just exit
         
-    splhigh();
+    } else { // I'm a child
+        //kprintf("waiting");cv_signal(kid_cv, proc_lock);
+        kprintf("@");
+        if (exit_process(curthread->t_process->PID, exitcode)  != 0)    {
+            //EINVAL;
+            *retval = -1;
+            return;
+        }
+    }
+    
+     
+     
+    
+    cv_signal(kid_cv, proc_lock);
+    //kprintf("signaled");
+    
+    cv_destroy(curthread->t_process->exit_cv);
+    cv_destroy(curthread->t_process->proc_cv);
+    
+    
+    
+    *retval = 0;
+    lock_release(proc_lock);
+    
     thread_exit();
-     */
+    
+    
 }
 
 /*

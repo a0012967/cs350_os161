@@ -9,7 +9,7 @@
 #include <thread.h>
 #include <curthread.h>
 #include <machine/spl.h>
-#include "opt-A1.h"
+#include "opt-a1.h"
 
 ////////////////////////////////////////////////////////////
 //
@@ -19,20 +19,20 @@ struct semaphore *
 sem_create(const char *namearg, int initial_count)
 {
 	struct semaphore *sem;
-
+    
 	assert(initial_count >= 0);
-
+    
 	sem = kmalloc(sizeof(struct semaphore));
 	if (sem == NULL) {
 		return NULL;
 	}
-
+    
 	sem->name = kstrdup(namearg);
 	if (sem->name == NULL) {
 		kfree(sem);
 		return NULL;
 	}
-
+    
 	sem->count = initial_count;
 	return sem;
 }
@@ -42,11 +42,11 @@ sem_destroy(struct semaphore *sem)
 {
 	int spl;
 	assert(sem != NULL);
-
+    
 	spl = splhigh();
 	assert(thread_hassleepers(sem)==0);
 	splx(spl);
-
+    
 	/*
 	 * Note: while someone could theoretically start sleeping on
 	 * the semaphore after the above test but before we free it,
@@ -55,7 +55,7 @@ sem_destroy(struct semaphore *sem)
 	 * freed. Consequently, there's not a whole lot of point in 
 	 * including the kfrees in the splhigh block, so we don't.
 	 */
-
+    
 	kfree(sem->name);
 	kfree(sem);
 }
@@ -65,7 +65,7 @@ P(struct semaphore *sem)
 {
 	int spl;
 	assert(sem != NULL);
-
+    
 	/*
 	 * May not block in an interrupt handler.
 	 *
@@ -73,7 +73,7 @@ P(struct semaphore *sem)
 	 * complete the P without blocking.
 	 */
 	assert(in_interrupt==0);
-
+    
 	spl = splhigh();
 	while (sem->count==0) {
 		thread_sleep(sem);
@@ -103,23 +103,23 @@ struct lock *
 lock_create(const char *name)
 {
 	struct lock *lock;
-
+    
 	lock = kmalloc(sizeof(struct lock));
 	if (lock == NULL) {
 		return NULL;
 	}
-
+    
 	lock->name = kstrdup(name);
 	if (lock->name == NULL) {
 		kfree(lock);
 		return NULL;
 	}
 	
-	//modified
-	lock->thread = NULL;
-	
 	// add stuff here as needed
-	
+#if OPT_A1
+    lock->myOwner = NULL;
+#endif /* OPT_A1 */
+    
 	return lock;
 }
 
@@ -127,9 +127,14 @@ void
 lock_destroy(struct lock *lock)
 {
 	assert(lock != NULL);
-
+    
 	// add stuff here as needed
-	
+#if OPT_A1
+    assert(lock->myOwner == NULL);
+    
+    kfree(lock->myOwner);
+    
+#endif
 	kfree(lock->name);
 	kfree(lock);
 }
@@ -137,80 +142,73 @@ lock_destroy(struct lock *lock)
 void
 lock_acquire(struct lock *lock)
 {
-        #if OPT_A1
+	// Write this
 
-        int spl;
-        assert (lock != NULL);
-        
-        spl = splhigh();
-        //if(lock->thread != NULL) kprintf("lock not null thread null: %d name: %s\n", lock->thread,lock->name);
-        while (lock->thread != NULL) 
-        {
-            thread_sleep(lock);
-        }
-      //  kprintf("lock acqure success: %d\n",lock->name);
-        lock->thread = curthread;
-        
-        splx(spl);
-            
-        #else
+#if OPT_A1
+    assert(lock != NULL); // lock must exist!
 
-        // Write this
+    /* interupts must be off! 
+     */
+    int level = splhigh(); // level = splevel before interrupt is off 
 
-        (void)lock;  // suppress warning until code gets written
-                
-        #endif /* OPT_A1 */
-               
+    while (lock->myOwner != NULL )    {
+        /*
+         lock is already owned by someone. So the thread asking for the lock must sleep
+         */
+        thread_sleep(lock);
+    }
+
+    /*
+     instead of just giving it to the thread asking, we must give it to the current running thread.
+     */
+    lock->myOwner = curthread;
+
+    splx(level); // set level back to before aquiring locks
+#else
+    (void)lock;
+#endif
+    
 }
+
 
 void
 lock_release(struct lock *lock)
 {
-        #if OPT_A1
+    // Write this
+#if OPT_A1
+    assert(lock != NULL); // someone must be holding the lock!
+    
+    /* interupts must be off!
+     */
+    int level = splhigh();
+    
+    assert(lock_do_i_hold(lock));   //check that we own the lock  
+    
+    lock->myOwner = NULL; //no one owns the lock now.
+    
+    thread_wakeup(lock); //wake up a thread that wants the lock ***may need to write fn for waking up single thread
+    
+    splx(level); //level back to beofre
+#else
+    (void)lock;
+#endif
 
-        int spl;
-        
-        assert(lock != NULL);
-        
-        spl = splhigh();
-        
-        if (lock_do_i_hold(lock) == 1) 
-        {
-            thread_wakeup(lock);
-        }
-        
-        lock->thread = NULL;
-        
-        splx(spl);
-            
-        #else
-
-        // Write this
-
-        (void)lock;  // suppress warning until code gets written
-            
-        #endif /* OPT_A1 */
-        
 }
 
 int
 lock_do_i_hold(struct lock *lock)
 {
-        #if OPT_A1
-
-        assert(lock != NULL);
-        
-        return (lock->thread == curthread);
-        
-        #else
-
-	// Write this
+#if OPT_A1
     
+    if (curthread == lock->myOwner)   {
+        return 1; 
+    } else {
+        return 0; //i don't hold lock
+    }
+#else
 	(void)lock;  // suppress warning until code gets written
-
 	return 1;    // dummy until code gets written
-        
-        #endif /* OPT_A1 */
+#endif /* OPT_A1 */
 }
 
 ////////////////////////////////////////////////////////////
@@ -222,12 +220,12 @@ struct cv *
 cv_create(const char *name)
 {
 	struct cv *cv;
-
+    
 	cv = kmalloc(sizeof(struct cv));
 	if (cv == NULL) {
 		return NULL;
 	}
-
+    
 	cv->name = kstrdup(name);
 	if (cv->name==NULL) {
 		kfree(cv);
@@ -243,7 +241,7 @@ void
 cv_destroy(struct cv *cv)
 {
 	assert(cv != NULL);
-
+    
 	// add stuff here as needed
 	
 	kfree(cv->name);
@@ -253,101 +251,62 @@ cv_destroy(struct cv *cv)
 void
 cv_wait(struct cv *cv, struct lock *lock)
 {
-        #if OPT_A1
-    
-        assert(cv != NULL);
-        assert(lock != NULL);
-        
-        lock_release(lock);
-        
-        int spl;
-
-        struct thread *t; // stores address of curthread, i.e. the thread which 
-                          // needs to be put to sleep
-        
-        if (cv->q == NULL)
-            cv->q = q_create(100); // initialize a queue of size 100 for now
-                
-        t = curthread; // storing address of the curthread in order to put 
-                       // the same thread to sleep afterwards
-        
-        spl = splhigh();
-        
-        q_addtail(cv->q,t);
-        
-        thread_sleep(t);
-                   
-        splx(spl);
-        
-        lock_acquire(lock);
-
-        #else
-
 	// Write this
-	(void)cv;    // suppress warning until code gets written
+	
+#if OPT_A1
+	assert(cv != NULL);
+	assert(lock != NULL);
+	assert(lock_do_i_hold(lock));
+	assert(in_interrupt==0);
+    int level;
+    
+    lock_release(lock);
+    level = splhigh();
+    thread_sleep(cv);
+    splx(level);
+    lock_acquire(lock);
+    
+#else
+    (void)cv;    // suppress warning until code gets written
 	(void)lock;  // suppress warning until code gets written
-        
-        #endif /* OPT_A1 */
+#endif /* OPT_A1 */
 }
 
 void
 cv_signal(struct cv *cv, struct lock *lock)
 {
-        #if OPT_A1
-        
-        lock_release(lock);
-        
-        int spl;
-        
-        spl = splhigh();
-        
-        if (cv->q && !q_empty(cv->q))
-        {
-            thread_wakeup(q_remhead(cv->q));
-        }
-        
-        splx(spl);
-
-        lock_acquire(lock);
-        
-        #else
-
 	// Write this
+#if OPT_A
+	assert(cv != NULL);
+        assert(lock != NULL);
+        assert(lock_do_i_hold(lock));
+
+
+    int level = splhigh();
+    thread_wakeup_n(cv,1);
+    splx(level);
+    
+#else
 	(void)cv;    // suppress warning until code gets written
 	(void)lock;  // suppress warning until code gets written
-        
-        #endif /* OPT_A1 */
+#endif /* OPT_A1 */
 }
 
 void
 cv_broadcast(struct cv *cv, struct lock *lock)
 {
-        #if OPT_A1
-
-        lock_release(lock);
-        
-        int spl;
-        
-        spl = splhigh();
-        
-        // wake up all threads in queue, starting from the front
-        if (cv->q)
-        {
-            while (!q_empty(cv->q))
-            {
-                thread_wakeup(q_remhead(cv->q));
-            }
-        }
-        
-        splx(spl);
-        
-        lock_acquire(lock);
-        
-        #else
-
 	// Write this
+#if OPT_A1
+	assert(cv != NULL);
+        assert(lock != NULL);
+        assert(lock_do_i_hold(lock));
+
+
+    int level = splhigh();
+    thread_wakeup(cv);
+    splx(level);
+#else 
 	(void)cv;    // suppress warning until code gets written
 	(void)lock;  // suppress warning until code gets written
-        
-        #endif /* OPT_A1 */
+#endif /* OPT_A1 */
 }

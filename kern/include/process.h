@@ -21,7 +21,7 @@ struct process {
     
     // locks and cvs for waitpid
     struct cv* exit_cv;
-    struct lock* exit_lock; // lock for checking whether process exited or not
+    //struct lock* exit_lock; // lock for checking whether process exited or not
     
     struct fd_table* table; 
     struct cv* proc_cv;

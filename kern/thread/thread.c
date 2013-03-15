@@ -13,6 +13,7 @@
 #include <addrspace.h>
 #include <vnode.h>
 #include "opt-synchprobs.h"
+#include "opt-A1.h"
 #include "opt-A2.h"
 
 
@@ -577,6 +578,42 @@ thread_wakeup(const void *addr)
 		}
 	}
 }
+
+#if OPT_A1
+void
+thread_wakeup_n(const void *addr, int n)
+{
+	int i, result;
+    n = n - 1;
+	
+	// meant to be called with interrupts off
+	assert(curspl>0);
+	
+	// This is inefficient. Feel free to improve it.
+	
+	for (i=0; i<array_getnum(sleepers); i++) {
+		struct thread *t = array_getguy(sleepers, i);
+		if (t->t_sleepaddr == addr) {
+			
+			// Remove from list
+			array_remove(sleepers, i);
+			
+			// must look at the same sleepers[i] again
+			i--;
+            
+			/*
+			 * Because we preallocate during thread_fork,
+			 * this should never fail.
+			 */
+			result = make_runnable(t);
+			assert(result==0);
+            if (n==i)   {
+                break;//woke up n threads. Done.
+            }
+		}
+	}
+}
+#endif
 
 /*
  * Return nonzero if there are any threads who are sleeping on "sleep address"

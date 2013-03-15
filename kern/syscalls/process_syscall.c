@@ -7,13 +7,13 @@
 #include <clock.h>
 #include <syscall.h>
 #include <machine/trapframe.h>
-#include <opt-dumbvm.h>
+#include "opt-dumbvm.h"
 #include <test.h>
 #include <vm.h>
 #include <vfs.h>
 #include <synch.h>
 #include <process.h>
-//#include <fileDescriptor.h>
+#include <fileDescriptor.h>
 #include "opt-A2.h"
 
 /*
@@ -49,52 +49,61 @@ pid_t getpid()
 
 }
 
+
+
 pid_t waitpid(pid_t pid, int *status, int options, int *errno)
 {
-    struct process *p = process_get(pid); // process given by pid
+    lock_acquire(proc_lock);
     
-    /* Argument checking */
-    if (p == NULL) // invalid process, waitpid fails
-    {
+    
+    
+    if (options != 0) {
+        *errno = EINVAL;
         return (pid_t)(-1);
     }
     
-    if (options != 0) // invalid options 
-    {
-        errno = EINVAL;
+    if (*status == NULL) {
+        *errno = EFAULT;
         return (pid_t)(-1);
     }
     
-    if (status == NULL /* null ptr*/ || 
-        status > USERTOP /* ptr in kernel area */ || 
-        (unsigned int)status%4 != 0 /* not properly aligned */ ) // invalid pointer
-    {
-        errno = EFAULT;
-        return (pid_t)(-1);
-    }
+    struct process *kid_process = process_get(pid);
     
-    lock_acquire(p->exit_lock);
-    
-    if (p->exit == 1) // process has already exited
-    {
-        *status = p->exit_code;
-    }
-    else // process has not yet exited
-    {
-        pid_t parent_of_child_pid = p->parent->PID;
-        pid_t parent_pid = curthread->t_process->PID;
+    if (kid_process == NULL)   {
+        *status = -1;
+        lock_release(proc_lock);
         
-        // can only wait on your child
-        if (parent_of_child_pid == parent_pid)
-        {
-            while (p->exit == 1) // wait for process to exit
-                cv_wait(p->exit_cv, p->exit_lock);
-        }
+        *errno=EAGAIN;
+        return (pid_t)(-1);
     }
     
-    lock_release(p->exit_lock);
+    if (kid_process->parent != curthread->t_process)   {
+        lock_release(proc_lock);
+        *errno = ENOMEM;
+        return (pid_t)(-1);
+    }
     
-    return pid;
+    kprintf("*");
+    
+    if (kid_process->exit == 1)   {
+        kprintf(")");
+        *errno = 0;
+        *status = kid_process->exit_code;
+        remove_process(kid_process->PID);//destroy the kid
+        lock_release(proc_lock);
+        return pid;
+    } else {
+        *errno = 0;
+        while (kid_process->exit == 0) {
+            cv_wait(kid_process->exit_cv, proc_lock);
+            kprintf("released");
+        }
+        *status = kid_process->exit_code;
+        remove_process(kid_process->PID);//destroy the kid
+        lock_release(proc_lock);
+        return pid;
+    }
+    
 }
 
 
@@ -215,14 +224,11 @@ int sys_fork(struct trapframe *tf, int * retval)    {
     *retval = judge.child_pid;
     
     //check for errors (see fork_setup struct) 
-    if (judge.child_pid == 0)   {
+    if (judge.child_pid <= 0)   {
         *retval = -1;
         return ENOMEM;
-    } else if (judge.child_pid < 0) {
-        *retval = -1;
-        return EAGAIN;
     } else  {
-        *retval = 0;
+        //*retval = 0;
         return 0;
     }
     

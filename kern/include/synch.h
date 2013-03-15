@@ -5,13 +5,7 @@
 #ifndef _SYNCH_H_
 #define _SYNCH_H_
 
-#include "opt-A1.h"
-
-#if OPT_A1
-
-#include <queue.h>
-
-#endif
+#include "opt-a1.h"
 
 /*
  * Dijkstra-style semaphore.
@@ -60,16 +54,17 @@ struct lock {
 	char *name;
 	// add what you need here
 	// (don't forget to mark things volatile as needed)
-        #if OPT_A1
-
-        volatile struct thread *thread;
-        
-        #endif /* OPT_A1 */
+    
+#if OPT_A1
+    // the thread that currently owns this lock
+    volatile struct thread *myOwner; 
+#endif /* OPT_A1 */
+    
 };
 
 struct lock *lock_create(const char *name);
-void         lock_acquire(struct lock *);
-void         lock_release(struct lock *);
+void         lock_acquire(struct lock *); // when a thread wants me (ie, to aquire the lock)
+void         lock_release(struct lock *); // when owner is done with this lock, they must release it.
 int          lock_do_i_hold(struct lock *);
 void         lock_destroy(struct lock *);
 
@@ -104,12 +99,6 @@ struct cv {
 	char *name;
 	// add what you need here
 	// (don't forget to mark things volatile as needed)
-	#if OPT_A1
-
-	// a queue of blocked threads 
-        volatile struct queue *q;
-
-	#endif
 };
 
 struct cv *cv_create(const char *name);
