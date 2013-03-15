@@ -139,7 +139,7 @@ int exit_process(pid_t pid, int exitcode) {
     struct process *e = proctable[pid];
     
     //lock_acquire(e->exit_lock);
-    
+    kprintf("Exit code %d\n", exitcode);
     e->exit_code = exitcode;
     e->exit = 1;
     

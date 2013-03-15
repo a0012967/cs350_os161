@@ -53,7 +53,6 @@ pid_t getpid()
 
 pid_t waitpid(pid_t pid, int *status, int options, int *errno)
 {
-    lock_acquire(proc_lock);
     
     
     
@@ -69,6 +68,8 @@ pid_t waitpid(pid_t pid, int *status, int options, int *errno)
     
     struct process *kid_process = process_get(pid);
     
+        lock_acquire(proc_lock);
+
     if (kid_process == NULL)   {
         *status = -1;
         lock_release(proc_lock);
@@ -83,12 +84,13 @@ pid_t waitpid(pid_t pid, int *status, int options, int *errno)
         return (pid_t)(-1);
     }
     
-    kprintf("*");
+    //kprintf("*");
     
     if (kid_process->exit == 1)   {
-        kprintf(")");
+        //kprintf(")");
         *errno = 0;
         *status = kid_process->exit_code;
+        
         remove_process(kid_process->PID);//destroy the kid
         lock_release(proc_lock);
         return pid;
@@ -96,7 +98,7 @@ pid_t waitpid(pid_t pid, int *status, int options, int *errno)
         *errno = 0;
         while (kid_process->exit == 0) {
             cv_wait(kid_process->exit_cv, proc_lock);
-            kprintf("released");
+            //kprintf("released");
         }
         *status = kid_process->exit_code;
         remove_process(kid_process->PID);//destroy the kid

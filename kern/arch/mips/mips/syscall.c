@@ -94,6 +94,9 @@ mips_syscall(struct trapframe *tf)
                 
             case SYS_waitpid:
                 retval = waitpid(tf->tf_a0, &tf->tf_a1, tf->tf_a2, &err);
+                
+                tf->tf_a1 = 0;
+                //kprintf("STATUS CODE %d AND RETVAL %d\n", tf->tf_a1, retval);
                 break;
                
             case SYS_getpid:
@@ -131,7 +134,8 @@ mips_syscall(struct trapframe *tf)
 	}
 	else {
 		/* Success. */
-        
+            if (callno == SYS_waitpid)
+                kprintf("STATUS CODE %d\n", tf->tf_a1);
 		tf->tf_v0 = retval;
 		tf->tf_a3 = 0;      /* signal no error */
 	}

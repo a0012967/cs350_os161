@@ -9,7 +9,7 @@
 #include <thread.h>
 #include <curthread.h>
 #include <machine/spl.h>
-#include "opt-a1.h"
+#include "opt-A2.h"
 
 ////////////////////////////////////////////////////////////
 //
@@ -116,7 +116,7 @@ lock_create(const char *name)
 	}
 	
 	// add stuff here as needed
-#if OPT_A1
+#if OPT_A2
     lock->myOwner = NULL;
 #endif /* OPT_A1 */
     
@@ -129,7 +129,7 @@ lock_destroy(struct lock *lock)
 	assert(lock != NULL);
     
 	// add stuff here as needed
-#if OPT_A1
+#if OPT_A2
     assert(lock->myOwner == NULL);
     
     kfree(lock->myOwner);
@@ -144,7 +144,7 @@ lock_acquire(struct lock *lock)
 {
 	// Write this
 
-#if OPT_A1
+#if OPT_A2
     assert(lock != NULL); // lock must exist!
 
     /* interupts must be off! 
@@ -175,7 +175,7 @@ void
 lock_release(struct lock *lock)
 {
     // Write this
-#if OPT_A1
+#if OPT_A2
     assert(lock != NULL); // someone must be holding the lock!
     
     /* interupts must be off!
@@ -198,7 +198,7 @@ lock_release(struct lock *lock)
 int
 lock_do_i_hold(struct lock *lock)
 {
-#if OPT_A1
+#if OPT_A2
     
     if (curthread == lock->myOwner)   {
         return 1; 
@@ -253,7 +253,7 @@ cv_wait(struct cv *cv, struct lock *lock)
 {
 	// Write this
 	
-#if OPT_A1
+#if OPT_A2
 	assert(cv != NULL);
 	assert(lock != NULL);
 	assert(lock_do_i_hold(lock));
@@ -276,7 +276,7 @@ void
 cv_signal(struct cv *cv, struct lock *lock)
 {
 	// Write this
-#if OPT_A
+#if OPT_A2
 	assert(cv != NULL);
         assert(lock != NULL);
         assert(lock_do_i_hold(lock));
@@ -296,7 +296,7 @@ void
 cv_broadcast(struct cv *cv, struct lock *lock)
 {
 	// Write this
-#if OPT_A1
+#if OPT_A2
 	assert(cv != NULL);
         assert(lock != NULL);
         assert(lock_do_i_hold(lock));

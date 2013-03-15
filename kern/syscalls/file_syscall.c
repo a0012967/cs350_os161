@@ -182,28 +182,24 @@ void _exit(int exitcode, int * retval)
 {    
    
     lock_acquire(proc_lock); // get parent's lock
-   
     
-    fd_table_destroy();
-    
-     
+    //fd_table_destroy();
+
      struct cv *kid_cv = curthread->t_process->exit_cv;
+    
     
      if (curthread->t_process->parent == NULL)   {
         //I'm a root, just exit
-        
+        //thread_exit();
     } else { // I'm a child
-        //kprintf("waiting");cv_signal(kid_cv, proc_lock);
-        kprintf("@");
         if (exit_process(curthread->t_process->PID, exitcode)  != 0)    {
             //EINVAL;
             *retval = -1;
-            return;
+            lock_release(proc_lock);
+    
+    thread_exit();
         }
     }
-    
-     
-     
     
     cv_signal(kid_cv, proc_lock);
     //kprintf("signaled");

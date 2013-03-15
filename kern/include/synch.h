@@ -5,7 +5,7 @@
 #ifndef _SYNCH_H_
 #define _SYNCH_H_
 
-#include "opt-a1.h"
+#include "opt-A1.h"
 
 /*
  * Dijkstra-style semaphore.
