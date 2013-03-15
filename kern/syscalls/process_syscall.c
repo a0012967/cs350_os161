@@ -61,10 +61,10 @@ pid_t waitpid(pid_t pid, int *status, int options, int *errno)
         return (pid_t)(-1);
     }
     
-    if (*status == NULL) {
+    /*if (*status == NULL) {
         *errno = EFAULT;
         return (pid_t)(-1);
-    }
+    }*/
     
     struct process *kid_process = process_get(pid);
     
@@ -202,7 +202,7 @@ md_forkentry(void *data1, unsigned long data2) { // data1 = fork_setup monitor
 int sys_fork(struct trapframe *tf, int * retval)    {
     
     //set up fork_setup struct to keep track of fork progress
-    
+    kprintf(".");
     struct fork_setup judge;
     judge.child_sem = sem_create("fork sem", 0); // don't let parent go until child V this
     if (judge.child_sem == NULL)  {
