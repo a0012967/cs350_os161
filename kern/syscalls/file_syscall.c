@@ -40,7 +40,7 @@ if(syslock ==NULL){
 }
 
 int
-write(int fd, const void *buf, size_t nbytes){
+write(int fd, const void *buf, size_t nbytes,int *retval){
     
     if(fd < 0|| fd >= MAX_FILE_OPEN /*|| curthread->t_process == NULL || curthread->t_process->table == NULL/*||(curthread->t_process->table->fds[fd]->flag != O_WRONLY && curthread->t_process->table->fds[fd]->flag != O_RDWR )*/){
         //kprintf("WRITE HERE\n");
@@ -87,8 +87,8 @@ write(int fd, const void *buf, size_t nbytes){
     curthread->t_process->table->fds[fd]->offset =  u_write.uio_resid;
 
  
-    
-   return nbytes - u_write.uio_resid; //returns how many were written
+    *retval = nbytes - u_write.uio_resid;
+   return 0; //returns how many were written
     
 }
 
@@ -124,9 +124,9 @@ int read(int fd, void *buf, size_t nbytes, int *err){
     
     struct vnode *vn = curthread->t_process->table->fds[fd]->vn;
     lock_acquire(syslock);
-    kprintf("preparing to read\n");
+  //  kprintf("preparing to read\n");
     int result2 = VOP_READ(vn,&u_read);
-    kprintf("read succesfful\n");
+    //kprintf("read succesfful\n");
     lock_release(syslock);    
  
     
@@ -135,7 +135,7 @@ int read(int fd, void *buf, size_t nbytes, int *err){
         return -1; 
     }
     
-    
+    //kprintf("return val is %d",nbytes - u_read.uio_resid);
     curthread->t_process->table->fds[fd]->offset = u_read.uio_resid;
     *err = 0; //success
     return nbytes - u_read.uio_resid; //returns how many were written
