@@ -191,8 +191,11 @@ void _exit(int exitcode, int * retval)
      if (curthread->t_process->parent == NULL)   {
         //I'm a root, just exit
         //thread_exit();
+         //kprintf("Parent\n");
     } else { // I'm a child
+         //kprintf("Child\n");
         if (exit_process(curthread->t_process->PID, exitcode)  != 0)    {
+            kprintf("ERROR..\n");
             //EINVAL;
             *retval = -1;
             lock_release(proc_lock);
@@ -230,26 +233,50 @@ calc_align_length(char *argv)
     return argvlen+paddinglen; // total correct alignment length(multiple of 4)
 }
 
-int execv(const char *progname, char **argv, int *retval)
+/*
+ * Load program "progname" and start running it in usermode.
+ * Does not return except on error.
+ *
+ * Calls vfs_open on progname and thus may destroy it.
+ */
+int
+execv(char *progname, char** argv_o, int* retval)
 {
-    	struct vnode *v;
+	struct vnode *v;
 	vaddr_t entrypoint, stackptr;
 	int result;
         int argc = 0;
+        int k;
         
-        while (argv[argc] != NULL)
+        
+        // copy into kernel heap
+        while (argv_o[argc] != NULL)
         {
+            //kprintf("arguments %s\n", argv_o[argc]);
             argc++;
         }
+        //kprintf("Total arguments %d\n", argc);
+        //argc++;
+        //argv_o[argc] = NULL; // ensure last argument point to NULL
         
-        argc++;
-
+        char **argv = kmalloc(sizeof(char*) * argc);
+        
+        for (k = 0; k < argc ; k++)
+        {//kprintf("Looping %d\n", k);
+        //kprintf("ARGUMENTS IN NEW %s\n", argv_o[k]);
+            argv[k] = kmalloc(sizeof(char) * (strlen(argv_o[k])+1));
+            strcpy(argv[k], argv_o[k]);
+            
+        }
+        
 	/* Open the file. */
 	result = vfs_open(progname, O_RDONLY, &v);
 	if (result) {
 		return result;
 	}
 
+        as_destroy(curthread->t_vmspace);
+        curthread->t_vmspace = NULL;
 	/* We should be a new thread. */
 	assert(curthread->t_vmspace == NULL);
 
@@ -280,11 +307,11 @@ int execv(const char *progname, char **argv, int *retval)
 		/* thread_exit destroys curthread->t_vmspace */
 		return result;
 	}
-
     
-    
+        //kprintf("here!\n");
     //Initialize the Process & put it onto proctable
     lock_acquire(proc_lock);
+    //kprintf("here1!\n");
     struct process *new_processs = add_process_new();
     if (new_processs == NULL) {
         return EAGAIN; // error occured
@@ -297,8 +324,9 @@ int execv(const char *progname, char **argv, int *retval)
     if (result) {
         return result; // Error occured
     }
-    
+    //kprintf("here2!\n");
     lock_release(proc_lock);
+    //kprintf("here3!\n");
     
     //Argument passing
         vaddr_t initialptr = stackptr;
@@ -307,9 +335,9 @@ int execv(const char *progname, char **argv, int *retval)
         int err;
         
         unsigned int alignlen; // length of argument with correct mod4 alignment
-        
-        if (argc > 1)
-        {
+        //kprintf("argc num %s\n", argv[0]);
+        //if (argc > 1)
+        //{
             for (i = 0; i < argc; i++) // copyout the array values
             {
                 j = argc-(i+1);
@@ -320,9 +348,11 @@ int execv(const char *progname, char **argv, int *retval)
 
                 if ((err = copyoutstr(argv[j], stackptr, strlen(argv[j])+1, &alignlen)) != 0)
                     kprintf("ERROR copyoutstr %d\n", err);
-
+//kprintf("argc num %d\n", i);
                 argv[j] = stackptr; // fill argv with actual user space ptr
             }
+
+            
             
             for (i = 0; i <= argc; i++) // copyout the array addresses
             {
@@ -333,30 +363,22 @@ int execv(const char *progname, char **argv, int *retval)
                     kprintf("ERROR copyout %d\n", err);
 
             }
-
+            //kprintf("here4!\n");
             /* Warp to user mode. */
             md_usermode(argc /*argc*/, stackptr /*userspace addr of argv*/,
                         stackptr, entrypoint);
-        }
-        else
-        {
+        //}
+        //else
+        //{
             /* Warp to user mode. */
-            md_usermode(0 /*argc*/, NULL /*userspace addr of argv*/,
-                        stackptr, entrypoint);
-        }
+            //md_usermode(1 /*argc*/, NULL /*userspace addr of argv*/,
+              //          stackptr, entrypoint);
+        //}
 	
 	/* md_usermode does not return */
 	panic("md_usermode returned\n");
 
-    
-	md_usermode(0 /*argc*/, NULL /*userspace addr of argv*/,stackptr, entrypoint);
-	
-	/* md_usermode does not return */
-
-    panic("md_usermode returned\n");
-
 	return EINVAL;
 }
-
 
 #endif /* _OPT_A2_ */
