@@ -93,10 +93,7 @@ mips_syscall(struct trapframe *tf)
                 break;
                 
             case SYS_waitpid:
-                retval = waitpid(tf->tf_a0, tf->tf_a1, tf->tf_a2, &err);
-                
-                //tf->tf_a1 = 2;
-                //kprintf("STATUS CODE %d AND RETVAL %d\n", tf->tf_a1, retval);
+                retval = waitpid(tf->tf_a0, (userptr_t)tf->tf_a1, tf->tf_a2, &err);
                 break;
                
             case SYS_getpid:
@@ -108,10 +105,10 @@ mips_syscall(struct trapframe *tf)
                 err = sys_fork(tf, &retval);
             //kprintf("err is: %d, retval is: %d\n",err,(int)retval);
                 break;
-            /*    
+                
             case SYS_execv:
                 err = execv(tf->tf_a0, tf->tf_a1, &retval);
-                break;*/
+                break;
                 
 	    /* Add stuff here */
 #endif

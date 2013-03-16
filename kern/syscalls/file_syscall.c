@@ -184,7 +184,7 @@ void _exit(int exitcode, int * retval)
     lock_acquire(proc_lock); // get parent's lock
     
     //fd_table_destroy();
-
+    
      struct cv *kid_cv = curthread->t_process->exit_cv;
     
     
@@ -203,16 +203,14 @@ void _exit(int exitcode, int * retval)
     thread_exit();
         }
     }
-    
-    cv_signal(kid_cv, proc_lock);
-    //kprintf("signaled");
+    cv_broadcast(kid_cv, proc_lock);
     
     cv_destroy(curthread->t_process->exit_cv);
     cv_destroy(curthread->t_process->proc_cv);
     
     
     
-    *retval = 0;
+    //*retval = 0;
     lock_release(proc_lock);
     
     thread_exit();
@@ -259,7 +257,7 @@ execv(char *progname, char** argv_o, int* retval)
         //argc++;
         //argv_o[argc] = NULL; // ensure last argument point to NULL
         
-        char **argv = kmalloc(sizeof(char*) * argc);
+        char **argv = kmalloc(sizeof(char*) * (argc+1));
         
         for (k = 0; k < argc ; k++)
         {//kprintf("Looping %d\n", k);
@@ -268,7 +266,7 @@ execv(char *progname, char** argv_o, int* retval)
             strcpy(argv[k], argv_o[k]);
             
         }
-        
+        argv[argc] = NULL;
 	/* Open the file. */
 	result = vfs_open(progname, O_RDONLY, &v);
 	if (result) {
@@ -310,13 +308,19 @@ execv(char *progname, char** argv_o, int* retval)
     
         //kprintf("here!\n");
     //Initialize the Process & put it onto proctable
+        if (curthread->t_process == NULL)
+        {
     lock_acquire(proc_lock);
     //kprintf("here1!\n");
     struct process *new_processs = add_process_new();
+    
     if (new_processs == NULL) {
         return EAGAIN; // error occured
     } else {
+        new_processs->exit_code = curthread->t_process->exit_code;
         curthread->t_process = new_processs;
+        kprintf("HERE %d\n", curthread->t_process->exit_code);
+        
     }
     
     //Initialize fd table
@@ -326,8 +330,8 @@ execv(char *progname, char** argv_o, int* retval)
     }
     //kprintf("here2!\n");
     lock_release(proc_lock);
-    //kprintf("here3!\n");
-    
+        }
+        
     //Argument passing
         vaddr_t initialptr = stackptr;
         unsigned int i;

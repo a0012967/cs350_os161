@@ -32,7 +32,7 @@ HOST_LIBS=
 # This must be an absolute path, because it is used from different
 # levels of the source tree.
 #
-OSTREE=/u3/cecabusas/cs350-os161/root
+OSTREE=/home/estellewan/cs350-os161/root
 
 #
 # Name of the platform we're building OS/161 to run on.

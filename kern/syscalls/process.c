@@ -60,7 +60,7 @@ struct process *add_process_new()   {
     new->exit=0; // 0 = running
     
     // initialize exit lock and cv for waitpid
-    //new->exit_lock = lock_create("lock to check if process exited");
+    new->exit_lock = lock_create("lock to check if process exited");
     new->exit_cv = cv_create("cv for wait on process to exit");
     
     new->table=NULL;

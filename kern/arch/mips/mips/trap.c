@@ -46,8 +46,8 @@ kill_curthread(u_int32_t epc, unsigned code, u_int32_t vaddr)
 	 * You will probably want to change this.
 	 */
 #if OPT_A2
-    _exit(code);
-#else
+    //_exit(code);
+//#else
 
 	panic("I don't know how to handle this\n");
 #endif
@@ -148,8 +148,8 @@ mips_trap(struct trapframe *tf)
 		 */
             
 #if OPT_A2
-            _exit(code);
-#else
+           // _exit(code);
+//#else
 		panic("Bus error exception, PC=0x%x\n", tf->tf_epc);
 #endif
             break;
@@ -200,9 +200,9 @@ mips_trap(struct trapframe *tf)
 	 * Really fatal kernel-mode fault.
 	 */
 #if OPT_A2
-    _exit(code);
+    //_exit(code);
     
-#else
+//#else
 	kprintf("panic: Fatal exception %u (%s) in kernel mode\n", code,
 		trapcodenames[code]);
 	kprintf("panic: EPC 0x%x, exception vaddr 0x%x\n", 

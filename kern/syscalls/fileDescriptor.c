@@ -101,6 +101,11 @@ int fd_table_close(int fd) {
         return result;
     }
     
+    if (f == NULL) {
+        curthread->t_process->table->fds[fd] = NULL;
+        return 0;
+    }
+    
     f->ref_count--;
     
     if (f->ref_count == 0) { // no longer used by anyone
