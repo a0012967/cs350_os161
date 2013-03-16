@@ -140,14 +140,14 @@ int fd_table_close_me(int fd, struct fd_table *t) {
 
 int fd_table_get(int fd, struct file **retval) {
     
-    struct fd_table *t = curthread->t_process->table->fds[fd];
+    struct fd_table *t = curthread->t_process->table;
     
     // check if fields are valid
     if (fd < 0 || fd >= MAX_FILE_OPEN) {
         return EBADF;
     }
     if (t->fds[fd] == NULL) {
-        EBADF;
+        return EBADF;
     }
     
     //found entry!
