@@ -96,15 +96,19 @@ int fd_table_close(int fd) {
     struct file *f;
     int result;
     //get entry from table
+    
     result = fd_table_get(fd, &f);
-    if (result) {
+    
+    if (result != 0) {
         return result;
     }
-    
+    //kprintf("@%d", f->ref_count);
     f->ref_count--;
     
     if (f->ref_count == 0) { // no longer used by anyone
+        
         vfs_close(f->vn);
+        //kprintf("^");
         kfree(f);
         curthread->t_process->table->fds[fd] = NULL;
     }
@@ -135,14 +139,17 @@ int fd_table_close_me(int fd, struct fd_table *t) {
 
 int fd_table_get(int fd, struct file **retval) {
     
-    struct fd_table *t = curthread->t_process->table->fds[fd];
+    
     
     // check if fields are valid
     if (fd < 0 || fd >= MAX_FILE_OPEN) {
         return EBADF;
     }
+    
+    struct fd_table *t = curthread->t_process->table;
+    
     if (t->fds[fd] == NULL) {
-        EBADF;
+        return EBADF;
     }
     
     //found entry!
@@ -157,7 +164,7 @@ int fd_table_get_me(int fd, struct file **retval, struct fd_table *t) {
         return EBADF;
     }
     if (t->fds[fd] == NULL) {
-        EBADF;
+        return EBADF;
     }
     
     //found entry!
