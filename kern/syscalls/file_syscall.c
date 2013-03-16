@@ -201,23 +201,23 @@ void _exit(int exitcode, int * retval)
     
     if (curthread->t_process->parent == NULL) {
         //I'm a root, just exit
-        //thread_exit();
-        //kprintf("Parent\n");
+        exit_process(curthread->t_process->PID, exitcode);
+        
     } else { // I'm a child
-        //kprintf("Child\n");
+        
         if (exit_process(curthread->t_process->PID, exitcode) != 0) {
-            //kprintf("ERROR..\n");
-            //EINVAL;
             *retval = -1;
             lock_release(proc_lock);
             
             thread_exit();
         }
-    }
-    cv_signal(kid_cv, proc_lock);
+        
+        cv_signal(kid_cv, proc_lock);
     
-    cv_destroy(curthread->t_process->exit_cv);
-    cv_destroy(curthread->t_process->proc_cv);
+        cv_destroy(curthread->t_process->exit_cv);
+        cv_destroy(curthread->t_process->proc_cv);
+    }
+    
     
     
     
@@ -249,7 +249,7 @@ calc_align_length(char *argv)
  * Calls vfs_open on progname and thus may destroy it.
  */
 int
-execv(char *progname, char** argv_o, int* retval)
+execv(char *progname, char** argv_o)
 {
     // Argument testing
     
