@@ -214,7 +214,7 @@ void _exit(int exitcode, int * retval)
             thread_exit();
         }
     }
-    cv_broadcast(kid_cv, proc_lock);
+    cv_signal(kid_cv, proc_lock);
     
     cv_destroy(curthread->t_process->exit_cv);
     cv_destroy(curthread->t_process->proc_cv);
