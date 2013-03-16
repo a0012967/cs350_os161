@@ -245,6 +245,17 @@ calc_align_length(char *argv)
 int
 execv(char *progname, char** argv_o, int* retval)
 {
+    // Argument testing
+    
+    if (progname == NULL || (progname >= ((void*)0x40000000)))
+        return EFAULT;
+    
+    if (strlen(progname) == 0)
+        return EINVAL;
+    
+    if (argv_o == NULL || (argv_o >= ((void*)0x40000000)))
+        return EFAULT;
+    
 	struct vnode *v;
 	vaddr_t entrypoint, stackptr;
 	int result;
@@ -258,9 +269,6 @@ execv(char *progname, char** argv_o, int* retval)
             //kprintf("arguments %s\n", argv_o[argc]);
             argc++;
         }
-        //kprintf("Total arguments %d\n", argc);
-        //argc++;
-        //argv_o[argc] = NULL; // ensure last argument point to NULL
         
         char **argv = kmalloc(sizeof(char*) * (argc+1));
         
