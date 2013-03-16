@@ -46,7 +46,7 @@ write(int fd, const void *buf, size_t nbytes,int *retval){
         return EBADF;
         
     }
-    if(!buf){
+    if(!buf || ((buf == ((void*)0x40000000)) || (buf == ((void*)0x80000000)))){
         
         return EFAULT;
     }
