@@ -28,23 +28,12 @@ void proctable_init(struct process *t,int len){
 #if OPT_A2
 pid_t getpid()
 {
-    int i;
-    for(i = 0; i<MAX_PROCESS; i++){
-        
-        /** each process linked to a thread **
-        if(proctable[i]->PID == curthread) {
-            
-            return proctable[i]->PID;
-        }*/
-        
-        /** each thread linked to a process **/
-        int cur_pid = (int)curthread->t_process->PID;
-        
-        if (proctable[cur_pid] != NULL)
-            return cur_pid;
-        
-    }
-    
+    /** each thread linked to a process **/
+    int cur_pid = (int)curthread->t_process->PID;
+
+    if (proctable[cur_pid] != NULL)
+        return cur_pid;
+
     return (pid_t)(-1);
 
 }
