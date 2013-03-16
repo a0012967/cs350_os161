@@ -16,7 +16,7 @@
 #include "opt-dumbvm.h"
 #include <fileDescriptor.h>
 #include <file_syscall.h>
-/*write writes up to buflen bytes to the file specified by fd, at the location in the file specified by the current 
+/*write writes up to buflen bytes to the file specified by fd, at the location in the file specified by the current
  //seek position of the file, taking the data from the space pointed to by buf. The file must be open for writing.*/
 //Must ensure that we only allow one thread to do any of the syscalls
 
@@ -24,7 +24,6 @@
 
 /*
  Yi:
- 
  Carl, I put in a fd table lock called fd_lock in process.h, maybe we can coordinate that lock for all the file syscalls?
  */
 volatile struct lock *syslock = NULL;
@@ -42,25 +41,17 @@ static void init(){
 int
 write(int fd, const void *buf, size_t nbytes,int *retval){
     //kprintf("%");
-    if(fd < 0|| fd >= MAX_FILE_OPEN /*||curthread->t_process->table->fds[fd]== NULL*/){
-        kprintf("write: first case\n");
+    if(fd < 0|| fd >= MAX_FILE_OPEN ||curthread->t_process->table->fds[fd]== NULL){
+        
         return EBADF;
         
     }
-    
-    if(!(/*curthread->t_process->table->fds[fd]->flag== O_RDONLY||*/curthread->t_process->table->fds[fd]->flag== O_WRONLY||curthread->t_process->table->fds[fd]->flag== O_RDWR)){
-        kprintf("write: second case, owronly? %s, RWDR? %s\n",curthread->t_process->table->fds[fd]->flag== O_WRONLY? "TRUE":"FALSE",curthread->t_process->table->fds[fd]->flag== O_RDWR? "TRUE":"FALSE");
-        kprintf("write: %d",curthread->t_process->table->fds[fd]->flag);
-        return EBADF;
-        
-    }
-    
     if(!buf){
         
         return EFAULT;
     }
     
-    init();
+    //init();
     
     
     
@@ -72,24 +63,24 @@ write(int fd, const void *buf, size_t nbytes,int *retval){
     
     
     struct vnode *vn = curthread->t_process->table->fds[fd]->vn;
-    lock_acquire(syslock);
+    // lock_acquire(syslock);
     
     
     int result2 = VOP_WRITE(vn,&u_write);
     
-    lock_release(syslock);    
+    //lock_release(syslock);
     
     if(result2){
-        kprintf("write: error result2:", result2);
+        
         return result2; //should also return EIO and ENOSPC
     }
     
-    curthread->t_process->table->fds[fd]->offset =  u_write.uio_offset;
+    curthread->t_process->table->fds[fd]->offset = u_write.uio_offset;
     
     
     *retval = nbytes - u_write.uio_resid;//returns how many were written
     
-    return 0; 
+    return 0;
     
 }
 
@@ -99,62 +90,37 @@ write(int fd, const void *buf, size_t nbytes,int *retval){
 
 int read(int fd, void *buf, size_t nbytes, int *retval){
     
-    
-    //kprintf("fd is %d\n",fd);
-    
-    if(fd < 0 || fd >= MAX_FILE_OPEN || curthread->t_process->table->fds[fd]== NULL){
-        //kprintf("read: 1st case ");
+    if(fd < 0 || fd >= MAX_FILE_OPEN /*|| curthread->t_process->table->fds[fd]== NULL*/){
         
         return EBADF;
         
     }
-    if(!(curthread->t_process->table->fds[fd]->flag== O_RDONLY/*||curthread->t_process->table->fds[fd]->flag== O_WRONLY*/||curthread->t_process->table->fds[fd]->flag== O_RDWR)){
-        
-        return EBADF;
-        
-    }
-    
-    //kprintf("-------------\n");
-    //kprintf("t process null? %s, table null? %s, fds null?\n", curthread->t_process == NULL? "True":"False",curthread->t_process->table == NULL? "True":"False",curthread->t_process->table->fds == NULL? "True":"False");
-    //kprintf("-------------\n");
-    
-    if(curthread->t_process == NULL || curthread->t_process->table == NULL || curthread->t_process->table->fds[fd] == NULL){
-        
-        //  kprintf("read: 2nd case \n");    
-        
-        
-        
-        return EBADF;
-        
-    }
-    if(!buf){
-        //  kprintf("read: 3rd case ");
+    if(/*top < bot ||*/ !buf){
         
         return EFAULT;
     }
-    kprintf("init ");
-    init();
     
-    // kprintf("calc offset\n");
+    // init();
+    
     int offset = curthread->t_process->table->fds[fd]->offset;
-    //  kprintf("write: offset is %d \n",offset);
+    
     
     struct uio u_read; //used to hold data to read
     
     mk_kuio(&u_read,buf,nbytes,offset,UIO_READ);
     
-    // kprintf("return from mkui ");
+    
     struct vnode *vn = curthread->t_process->table->fds[fd]->vn;
-    lock_acquire(syslock);
-    // kprintf("read: before vopread\n");
+    //lock_acquire(syslock);
+    
     int result2 = VOP_READ(vn,&u_read);
-    // kprintf("after vop_read");
-    lock_release(syslock);    
+    
+    // lock_release(syslock);
     
     
     if(result2){
         //should also return EIO and ENOSPC
-        return result2; 
+        return result2;
     }
     
     
@@ -171,16 +137,13 @@ int read(int fd, void *buf, size_t nbytes, int *retval){
 
 // Opens a file using fd table
 int sys_open(userptr_t filename, int flags, int mode, int * retval) {
-    kprintf("open: flags %d\n",flags);
-    
-    
-    
+    //kprintf("(");
     int result;
     char copy_filename[PATH_MAX];
     
     //copy filename from user to kernel
     result = copyinstr(filename, copy_filename, sizeof(copy_filename), NULL);
-    // kprintf("open: finished copinstr result was %d\n",result);
+    
     if (result) {
         return result;
     }
@@ -188,7 +151,6 @@ int sys_open(userptr_t filename, int flags, int mode, int * retval) {
     //kprintf(")");
     
     //opens via fd table
-    //  kprintf("open: call to fd_table_open\n");
     return fd_table_open(filename, flags, retval);
     
     (void) mode; //supress mode in A2
@@ -196,7 +158,7 @@ int sys_open(userptr_t filename, int flags, int mode, int * retval) {
 
 
 int sys_close(int fd) {
-    //kprintf("close: fd: %d\n",fd);
+    //kprintf("&");
     //closes through fd_table
     if(fd<0 || fd>= MAX_FILE_OPEN||curthread->t_process->table->fds[fd] == NULL){
         
@@ -205,23 +167,23 @@ int sys_close(int fd) {
     int result = fd_table_close(fd);
     
     //kprintf("+");
-    if (result != 0)    {
+    if (result != 0) {
         //uh oh
         return -1;
     } else {
-        return 0; 
+        return 0;
     }
 }
 
 //checks to see if a process has exited
 int process_exited(struct process* proc){
-	
-	return proc->exit;
+    
+    return proc->exit;
     
 }
 
 void _exit(int exitcode, int * retval)
-{    
+{
     
     lock_acquire(proc_lock); // get parent's lock
     
@@ -230,13 +192,13 @@ void _exit(int exitcode, int * retval)
     struct cv *kid_cv = curthread->t_process->exit_cv;
     
     
-    if (curthread->t_process->parent == NULL)   {
+    if (curthread->t_process->parent == NULL) {
         //I'm a root, just exit
         //thread_exit();
         //kprintf("Parent\n");
     } else { // I'm a child
         //kprintf("Child\n");
-        if (exit_process(curthread->t_process->PID, exitcode)  != 0)    {
+        if (exit_process(curthread->t_process->PID, exitcode) != 0) {
             //kprintf("ERROR..\n");
             //EINVAL;
             *retval = -1;
@@ -264,16 +226,14 @@ void _exit(int exitcode, int * retval)
  * Calculates the padding length needed for a particular
  * string. Total length should be a multiple of 4
  */
-static unsigned int 
+static unsigned int
 calc_align_length(char *argv)
 {
     unsigned int argvlen = strlen(argv)+1; // length of actual string including '\0'
-    unsigned int paddinglen = 4-(argvlen%4);    // mod 4
+    unsigned int paddinglen = 4-(argvlen%4); // mod 4
     
     return argvlen+paddinglen; // total correct alignment length(multiple of 4)
 }
-
-
 
 /*
  * Load program "progname" and start running it in usermode.
@@ -295,9 +255,9 @@ execv(char *progname, char** argv_o, int* retval)
     if (argv_o == NULL || (argv_o >= ((void*)0x40000000)))
         return EFAULT;
     
-	struct vnode *v;
-	vaddr_t entrypoint, stackptr;
-	int result;
+    struct vnode *v;
+    vaddr_t entrypoint, stackptr;
+    int result;
     int argc = 0;
     int k;
     
@@ -319,44 +279,44 @@ execv(char *progname, char** argv_o, int* retval)
         
     }
     argv[argc] = NULL;
-	/* Open the file. */
-	result = vfs_open(progname, O_RDONLY, &v);
-	if (result) {
-		return result;
-	}
+    /* Open the file. */
+    result = vfs_open(progname, O_RDONLY, &v);
+    if (result) {
+        return result;
+    }
     
     as_destroy(curthread->t_vmspace);
     curthread->t_vmspace = NULL;
-	/* We should be a new thread. */
-	assert(curthread->t_vmspace == NULL);
+    /* We should be a new thread. */
+    assert(curthread->t_vmspace == NULL);
     
-	/* Create a new address space. */
-	curthread->t_vmspace = as_create();
-	if (curthread->t_vmspace==NULL) {
-		vfs_close(v);
-		return ENOMEM;
-	}
+    /* Create a new address space. */
+    curthread->t_vmspace = as_create();
+    if (curthread->t_vmspace==NULL) {
+        vfs_close(v);
+        return ENOMEM;
+    }
     
-	/* Activate it. */
-	as_activate(curthread->t_vmspace);
+    /* Activate it. */
+    as_activate(curthread->t_vmspace);
     
-	/* Load the executable. */
-	result = load_elf(v, &entrypoint);
-	if (result) {
-		/* thread_exit destroys curthread->t_vmspace */
-		vfs_close(v);
-		return result;
-	}
+    /* Load the executable. */
+    result = load_elf(v, &entrypoint);
+    if (result) {
+        /* thread_exit destroys curthread->t_vmspace */
+        vfs_close(v);
+        return result;
+    }
     
-	/* Done with the file now. */
-	vfs_close(v);
+    /* Done with the file now. */
+    vfs_close(v);
     
-	/* Define the user stack in the address space */
-	result = as_define_stack(curthread->t_vmspace, &stackptr);
-	if (result) {
-		/* thread_exit destroys curthread->t_vmspace */
-		return result;
-	}
+    /* Define the user stack in the address space */
+    result = as_define_stack(curthread->t_vmspace, &stackptr);
+    if (result) {
+        /* thread_exit destroys curthread->t_vmspace */
+        return result;
+    }
     
     //kprintf("here!\n");
     //Initialize the Process & put it onto proctable
@@ -428,14 +388,13 @@ execv(char *progname, char** argv_o, int* retval)
     //{
     /* Warp to user mode. */
     //md_usermode(1 /*argc*/, NULL /*userspace addr of argv*/,
-    //          stackptr, entrypoint);
+    // stackptr, entrypoint);
     //}
-	
-	/* md_usermode does not return */
-	panic("md_usermode returned\n");
     
-	return EINVAL;
+    /* md_usermode does not return */
+    panic("md_usermode returned\n");
+    
+    return EINVAL;
 }
-
 
 #endif /* _OPT_A2_ */
