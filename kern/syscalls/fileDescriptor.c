@@ -53,7 +53,7 @@ int fd_table_create() {
 
 int fd_table_open(char *name, int flag, int *retval) {
     int fd;
-    
+    //  kprintf("fd_table_open: 1\n");
     //set next available file descriptor
     struct fd_table *t = curthread->t_process->table;
     for (fd = 0; fd < MAX_FILE_OPEN; fd++) {
@@ -61,33 +61,37 @@ int fd_table_open(char *name, int flag, int *retval) {
             break;
         }
     }
-    
+    //  kprintf("fd_table_open: 2\n");
     if (fd >= MAX_FILE_OPEN) {
         return EMFILE; // too many open files
     }
-    
+    //kprintf("fd_table_open: 3\n");
     //Allocate the file descriptor
     struct file *f = kmalloc(sizeof(struct file));
     if (f==NULL) {
         return ENOMEM;
     }
-    
+    // kprintf("fd_table_open: 4\n");
     //Initialize file
     f->flag = flag;
     f->offset = 0;
     f->ref_count = 1;
-    
+    //   kprintf("fd_table_open: 5\n");
     //open the file for our vnode
     int result = vfs_open(name, flag, &(f->vn));
+    //   kprintf("fd_table_open: 6, result: %d\n", result);
     if (result) {
-        kfree(f->vn);
+        // kprintf("free f->vn\n");
+        //kfree(f->vn);
+        // kprintf("free f\n");
         kfree(f);
+        // kprintf("fdtableopen return\n");
         return result;
     }
-    
+    // kprintf("fd_table_open: 7\n");
     //set current table slot
     curthread->t_process->table->fds[fd] = f;
-    
+    // kprintf("fd_table_open: 8\n");
     *retval = fd;
     return 0;
 }
