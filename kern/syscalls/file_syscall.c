@@ -41,21 +41,10 @@ if(syslock ==NULL){
 
 int
 write(int fd, const void *buf, size_t nbytes,int *retval){
-    
-    if(fd < 0|| fd >= MAX_FILE_OPEN /*|| curthread->t_process == NULL || curthread->t_process->table == NULL/*||(curthread->t_process->table->fds[fd]->flag != O_WRONLY && curthread->t_process->table->fds[fd]->flag != O_RDWR )*/){
-        //kprintf("WRITE HERE\n");
-        /* kprintf("write, fd is %d, size is %d\n", fd,(int)nbytes);
-        kprintf("maxfile open cond: %d\n",fd >= MAX_FILE_OPEN);
-        int bool1 = curthread->t_process->table->fds[fd]== NULL;
-        kprintf("1st bool: %d\n",bool1);
-        int bool2 = curthread->t_process->table->fds[fd]->flag != O_WRONLY;
-        kprintf("2nd bool: %d, flag: %d\n",bool2,curthread->t_process->table->fds[fd]->flag);
-        int bool3 = curthread->t_process->table->fds[fd]->flag != O_RDWR;
-        kprintf("3rd bool: %d\n",bool3);
-        */ 
-        return EBADF;
+    //kprintf("%");
+    if(fd < 0|| fd >= MAX_FILE_OPEN ||curthread->t_process->table->fds[fd]== NULL){
         
-       
+       return EBADF;
         
     }
     if(!buf){
@@ -63,32 +52,36 @@ write(int fd, const void *buf, size_t nbytes,int *retval){
         return EFAULT;
     }
     
-    init();
+    //init();
     
    
     
     struct uio u_write; //used to hold data to write
     int offset = curthread->t_process->table->fds[fd]->offset;
+    
     mk_kuio(&u_write,buf,nbytes,offset,UIO_WRITE);
+
+    
+    
     struct vnode *vn = curthread->t_process->table->fds[fd]->vn;
-    lock_acquire(syslock);
-   
-    //int result = vfs_open(console,O_WRONLY,&vn);
+   // lock_acquire(syslock);
+
     
     int result2 = VOP_WRITE(vn,&u_write);
   
-        lock_release(syslock);    
+    //lock_release(syslock);    
  
     if(result2){
         
         return result2; //should also return EIO and ENOSPC
     }
     
-    curthread->t_process->table->fds[fd]->offset =  u_write.uio_resid;
+    curthread->t_process->table->fds[fd]->offset =  u_write.uio_offset;
 
  
-    *retval = nbytes - u_write.uio_resid;
-   return 0; //returns how many were written
+    *retval = nbytes - u_write.uio_resid;//returns how many were written
+
+   return 0; 
     
 }
 
@@ -96,14 +89,9 @@ write(int fd, const void *buf, size_t nbytes,int *retval){
 
 
 
-int read(int fd, void *buf, size_t nbytes, int *err){
-    //curthread->t_process->table[fd].offset
-    
-    vaddr_t bot,top;
-    bot = (vaddr_t) buf;
-    top = bot + nbytes -1;
-    
-    if(fd < 0 || fd >= MAX_FILE_OPEN || curthread->t_process->table->fds[fd]== NULL /*||( curthread->t_process->table->fds[fd]->flag != O_RDONLY && curthread->t_process->table->fds[fd]->flag != O_RDWR )*/){
+int read(int fd, void *buf, size_t nbytes, int *retval){
+
+    if(fd < 0 || fd >= MAX_FILE_OPEN /*|| curthread->t_process->table->fds[fd]== NULL*/){
 
         return EBADF;
         
@@ -113,7 +101,7 @@ int read(int fd, void *buf, size_t nbytes, int *err){
         return EFAULT;
     }
     
-    init();
+ //   init();
 
     int offset = curthread->t_process->table->fds[fd]->offset;
 
@@ -121,24 +109,27 @@ int read(int fd, void *buf, size_t nbytes, int *err){
     struct uio u_read; //used to hold data to read
  
     mk_kuio(&u_read,buf,nbytes,offset,UIO_READ);
+  
     
     struct vnode *vn = curthread->t_process->table->fds[fd]->vn;
-    lock_acquire(syslock);
-  //  kprintf("preparing to read\n");
+//lock_acquire(syslock);
+ 
     int result2 = VOP_READ(vn,&u_read);
-    //kprintf("read succesfful\n");
-    lock_release(syslock);    
+
+   // lock_release(syslock);    
  
     
     if(result2){
-        *err = result2; //should also return EIO and ENOSPC
-        return -1; 
+     //should also return EIO and ENOSPC
+        return result2; 
     }
     
-    //kprintf("return val is %d",nbytes - u_read.uio_resid);
-    curthread->t_process->table->fds[fd]->offset = u_read.uio_resid;
-    *err = 0; //success
-    return nbytes - u_read.uio_resid; //returns how many were written
+    
+    curthread->t_process->table->fds[fd]->offset = u_read.uio_offset;
+
+    *retval = nbytes - u_read.uio_resid; //returns how many were written
+  
+    return 0;
 }
 
 
@@ -147,7 +138,7 @@ int read(int fd, void *buf, size_t nbytes, int *err){
 
 // Opens a file using fd table
 int sys_open(userptr_t filename, int flags, int mode, int * retval) {
-    
+    //kprintf("(");
     int result;
     char copy_filename[PATH_MAX];
     
@@ -158,6 +149,8 @@ int sys_open(userptr_t filename, int flags, int mode, int * retval) {
         return result;
     }
     
+    //kprintf(")");
+    
     //opens via fd table
     return fd_table_open(filename, flags, retval);
     
@@ -166,9 +159,21 @@ int sys_open(userptr_t filename, int flags, int mode, int * retval) {
 
 
 int sys_close(int fd) {
-    
+    //kprintf("&");
     //closes through fd_table
-    return fd_table_close(fd);
+    if(fd<0 || fd>= MAX_FILE_OPEN||curthread->t_process->table->fds[fd] == NULL){
+        
+        return EBADF;
+    }
+    int result = fd_table_close(fd);
+
+    //kprintf("+");
+    if (result != 0)    {
+        //uh oh
+        return -1;
+    } else {
+       return 0; 
+    }
 }
 
 //checks to see if a process has exited
@@ -195,7 +200,7 @@ void _exit(int exitcode, int * retval)
     } else { // I'm a child
          //kprintf("Child\n");
         if (exit_process(curthread->t_process->PID, exitcode)  != 0)    {
-            kprintf("ERROR..\n");
+            //kprintf("ERROR..\n");
             //EINVAL;
             *retval = -1;
             lock_release(proc_lock);

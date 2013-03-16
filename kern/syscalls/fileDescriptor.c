@@ -96,6 +96,7 @@ int fd_table_close(int fd) {
     struct file *f;
     int result;
     //get entry from table
+    
     result = fd_table_get(fd, &f);
     if (result) {
         return result;
@@ -105,7 +106,6 @@ int fd_table_close(int fd) {
         curthread->t_process->table->fds[fd] = NULL;
         return 0;
     }
-    
     f->ref_count--;
     
     if (f->ref_count == 0) { // no longer used by anyone
