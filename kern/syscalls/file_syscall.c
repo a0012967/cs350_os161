@@ -65,7 +65,9 @@ write(int fd, const void *buf, size_t nbytes,int *retval){
     struct vnode *vn = curthread->t_process->table->fds[fd]->vn;
     // lock_acquire(syslock);
     
-    
+    if (curthread->t_process->table->fds[fd]->flag == O_RDONLY)
+        return EBADF;
+            
     int result2 = VOP_WRITE(vn,&u_write);
     
     //lock_release(syslock);
@@ -101,6 +103,11 @@ int read(int fd, void *buf, size_t nbytes, int *retval){
     }
     
     // init();
+    if (curthread->t_process->table->fds[fd] == NULL)
+        return EBADF;
+    
+    if (curthread->t_process->table->fds[fd]->flag == O_WRONLY)
+        return EBADF;
     
     int offset = curthread->t_process->table->fds[fd]->offset;
     

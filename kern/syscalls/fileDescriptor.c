@@ -80,7 +80,7 @@ int fd_table_open(char *name, int flag, int *retval) {
     //open the file for our vnode
     int result = vfs_open(name, flag, &(f->vn));
     if (result) {
-        kfree(f->vn);
+        //kfree(f->vn);
         kfree(f);
         return result;
     }
