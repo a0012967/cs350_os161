@@ -7,5 +7,5 @@
 /* Longest full path name */
 #define PATH_MAX   1024
 
-
+#define OPEN_MAX   20
 #endif /* _KERN_LIMITS_H_ */
