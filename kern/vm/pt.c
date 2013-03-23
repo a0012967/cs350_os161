@@ -1,6 +1,4 @@
 #include <pt.h>
-#include <current.h>
-#include <mips/tlb.h>
 #include <addrspace.h>
 #include <vm.h>
 #include <elf.h>
@@ -13,6 +11,78 @@
 
 
 
+
+
+
+
+
+/*
+ * Dumb MIPS-only "VM system" that is intended to only be just barely
+ * enough to struggle off the ground. You should replace all of this
+ * code while doing the VM assignment. In fact, starting in that
+ * assignment, this file is not included in your kernel!
+ */
+
+/* under dumbvm, always have 48k of user stack */
+#define DUMBVM_STACKPAGES    12
+
+
+static
+paddr_t
+getppages(unsigned long npages)
+{
+    
+#if OPT_A3
+    
+    if(pt_initiliaze == 0){
+        
+        return ram_stealmem(npages);
+        
+    }
+    
+    
+    
+    
+    
+#else
+	int spl;
+	paddr_t addr;
+    
+	spl = splhigh();
+    
+	addr = ram_stealmem(npages);
+	
+	splx(spl);
+	return addr;
+    
+#endif
+}
+
+/* Allocate/free some kernel-space virtual pages */
+vaddr_t 
+alloc_kpages(int npages)
+{
+	paddr_t pa;
+	pa = getppages(npages);
+	if (pa==0) {
+		return 0;
+	}
+	return PADDR_TO_KVADDR(pa);
+}
+
+void 
+free_kpages(vaddr_t addr)
+{
+	/* nothing */
+    
+	(void)addr;
+}
+
+int
+vm_fault(int faulttype, vaddr_t faultaddress)
+{
+	return -1;
+}
 
 void vm_bootstrap(){
 

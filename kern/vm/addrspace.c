@@ -27,16 +27,25 @@
 /* under dumbvm, always have 48k of user stack */
 #define DUMBVM_STACKPAGES    12
 
-void
-vm_bootstrap(void)
-{
-	/* Do nothing. */
-}
 
 static
 paddr_t
 getppages(unsigned long npages)
 {
+    
+#if OPT_A3
+    
+    if(pt_initiliaze == 0){
+        
+        return ram_stealmem(npages);
+        
+    }
+    
+    
+    
+    
+    
+#else
 	int spl;
 	paddr_t addr;
 
@@ -46,6 +55,8 @@ getppages(unsigned long npages)
 	
 	splx(spl);
 	return addr;
+    
+#endif
 }
 
 /* Allocate/free some kernel-space virtual pages */
