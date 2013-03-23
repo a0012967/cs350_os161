@@ -6,7 +6,7 @@
 #include <types.h>
 #include <kern/errno.h>
 #include <lib.h>
-#include <spl.h>
+
 #include <thread.h>
 
 
@@ -34,13 +34,15 @@ getppages(unsigned long npages)
     
 #if OPT_A3
     
-    if(pt_initiliaze == 0){
+    if(pt_initialize == 0){
         
         return ram_stealmem(npages);
         
     }
     
+    paddr_t addr;
     
+    return addr;
     
     
     
@@ -59,6 +61,7 @@ getppages(unsigned long npages)
 }
 
 /* Allocate/free some kernel-space virtual pages */
+/*
 vaddr_t 
 alloc_kpages(int npages)
 {
@@ -69,12 +72,13 @@ alloc_kpages(int npages)
 	}
 	return PADDR_TO_KVADDR(pa);
 }
-
+*/
+/*
 void 
 free_kpages(vaddr_t addr)
 {
 	/* nothing */
-    
+    /*
 	(void)addr;
 }
 
@@ -83,14 +87,14 @@ vm_fault(int faulttype, vaddr_t faultaddress)
 {
 	return -1;
 }
-
+*/
 void vm_bootstrap(){
 
    struct page *entry; //at the end should point to the same memory as pagetable in pt.h
 
 //allocating memory
 
-   paddr_t firstaddr,lastaddr,freeadr;
+   paddr_t firstaddr,lastaddr,freeaddr;
    ram_getsize(&firstaddr,&lastaddr);
    //page size defined in vm.h
    int page_size = lastaddr-firstaddr/PAGE_SIZE; //addr alignment, nOTE: This rounds out to a whole number
@@ -99,7 +103,7 @@ void vm_bootstrap(){
    if(pagetable == NULL){
       panic("Can't create page table, no mem\n");
    }
-   freeaddr = firstaddr + page_size * sizeof(page);
+   freeaddr = firstaddr + page_size * sizeof(page_size);
    if(lastaddr-freeaddr == 0){
    
       panic("OUT OF MEMORYn");
@@ -107,13 +111,14 @@ void vm_bootstrap(){
    // freee addr to lastaddr is the systems main memory
 //the actual init
 
-p = (struct page *) PADDR_TO_KVADDR((paddr_t)pagetable);
+struct page * p = (struct page *) PADDR_TO_KVADDR((paddr_t)pagetable);
    int i;
    for(i =0;i<(freeaddr-firstaddr)/PAGE_SIZE;i++){
       p->state = fixed; //fixed
       p->vaddr = PADDR_TO_KVADDR(firstaddr)+(i* page_size);
       //p->as   //need address space functions
       //p->PID = curthread
+       pagetable[i] = p[i];
       p+= sizeof(struct page);
    
    }
@@ -122,7 +127,7 @@ p = (struct page *) PADDR_TO_KVADDR((paddr_t)pagetable);
        p->vaddr = PADDR_TO_KVADDR(firstaddr)+(i* page_size);
       //p->as   //need address space functions
       //p->PID = curthread
-      pagetable[i] = p;
+      pagetable[i] = p[i];
       p+= sizeof(struct page);
    
    

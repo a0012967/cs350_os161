@@ -1,7 +1,7 @@
 #ifndef _PT_H_
 #define _PT_H_
 
-#include <vm.h>
+//#include <vm.h>
 #include <types.h>
 
 #include "opt-A3.h"
@@ -57,28 +57,15 @@ Two ways to handle this, map page tables using paddr, or map using vaddr
    */
   // uint64_t timestamp;
    
-}
+};
 
 struct lock* table_lock; // a lock to protect the page table
 
 
 
-
 int pt_initialize = 0;
 
-static struct page* pagetable;
-
-
-void init_pagetable(void);
-void free_[agetable(vaddr_t v);
-vaddr_t page_alloc(unsigned long num_pages);
-
-//these unctions might not be necessary since there are already ones defined in vm.h
-paddr_t get_pages(int npages);
-
-
-//page replacement
-void evict_page();
+struct page* pagetable;
 
 
 

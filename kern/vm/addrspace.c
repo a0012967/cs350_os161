@@ -8,26 +8,6 @@
 
 
 
-
-
-
-
-
-
-
-
-
-/*
- * Dumb MIPS-only "VM system" that is intended to only be just barely
- * enough to struggle off the ground. You should replace all of this
- * code while doing the VM assignment. In fact, starting in that
- * assignment, this file is not included in your kernel!
- */
-
-/* under dumbvm, always have 48k of user stack */
-#define DUMBVM_STACKPAGES    12
-
-
 static
 paddr_t
 getppages(unsigned long npages)
@@ -35,22 +15,24 @@ getppages(unsigned long npages)
     
 #if OPT_A3
     
-    if(pt_initiliaze == 0){
+    if(pt_initialize == 0){
         
         return ram_stealmem(npages);
         
     }
     
+    paddr_t addr;
     
+    return addr;
     
     
     
 #else
 	int spl;
 	paddr_t addr;
-
+    
 	spl = splhigh();
-
+    
 	addr = ram_stealmem(npages);
 	
 	splx(spl);
@@ -59,7 +41,9 @@ getppages(unsigned long npages)
 #endif
 }
 
-/* Allocate/free some kernel-space virtual pages */
+
+
+
 vaddr_t 
 alloc_kpages(int npages)
 {
@@ -71,11 +55,12 @@ alloc_kpages(int npages)
 	return PADDR_TO_KVADDR(pa);
 }
 
+
 void 
 free_kpages(vaddr_t addr)
 {
 	/* nothing */
-
+    
 	(void)addr;
 }
 
@@ -84,7 +69,6 @@ vm_fault(int faulttype, vaddr_t faultaddress)
 {
 	return -1;
 }
-
 
 
 
