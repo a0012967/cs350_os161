@@ -33,28 +33,13 @@ struct page{
 Two ways to handle this, map page tables using paddr, or map using vaddr
 
 */
-   enum page_state state; //intilize it as free? or clean?
-   //pid_t pid; //identity process which it belongs to
-   //paddr_t paddr; //what our pages will be maped to, can use vaddr_t instead
+   enum page_state state; 
+
     struct addrspace* as;
    vaddr_t vaddr;
-   //paddr_t paddr // the physical addr it is mapped to
-  // pid_t PID; //which frame does this belong to?
-   //int used;
-   //int kmem;
-   //int usermem;
-   //int max pages;
-  /*
-      The address space and virtual address identifier
-      
-      To evict a page: Look at the vaddr, and as and modify it so that you are no longer in memory
-      
-  
-  */
-  
-   /*
-   Page replacement stuff:
-   */
+    paddr_t paddr;
+    pid_t pid; 
+    int lenblock; // length of the block
   // uint64_t timestamp;
    
 };
@@ -62,8 +47,8 @@ Two ways to handle this, map page tables using paddr, or map using vaddr
 struct lock* table_lock; // a lock to protect the page table
 
 
-
-int pt_initialize = 0;
+int page_size;
+int pt_initialize;
 
 struct page* pagetable;
 
