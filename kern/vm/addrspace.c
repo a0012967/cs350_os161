@@ -351,9 +351,14 @@ as_activate(struct addrspace *as)
 
 	spl = splhigh();
 
-	for (i=0; i<NUM_TLB; i++) {
-		TLB_Write(TLBHI_INVALID(i), TLBLO_INVALID(), i);
-	}
+	// invalidate entries in TLB only if address spaces are different
+        
+        if (as != curthread->t_vmspace)
+        {
+            for (i=0; i<NUM_TLB; i++) {
+                    TLB_Write(TLBHI_INVALID(i), TLBLO_INVALID(), i);
+            }
+        }
 
 	splx(spl);
 #else
