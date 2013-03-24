@@ -28,9 +28,9 @@ getppages(unsigned long npages){
     
     int i;
     unsigned long count_pages;
-    for(i = 0; i< page_size; i++){
+    for(i = 0; i< coremap_size; i++){
         
-        if(pagetable->state == free){
+        if(coremap[i].valid == 1 && coremap[i].used == 0){
             
             count_pages++;
             if(count_pages == npages){
@@ -48,13 +48,13 @@ getppages(unsigned long npages){
     
     if(count_pages == npages){
         int j;
-        for(j =i - npages +1;j<page_size;j++){
+        for(j =i - npages +1;j<coremap_size;j++){
             
-            pagetable[j].state = dirty;
+            coremap[j].used= 1;
             
             
         }
-        return pagetable[i-npages+1].paddr;
+        return coremap[i-npages+1].paddr;
         
     }
     
@@ -100,17 +100,17 @@ void
 free_kpages(vaddr_t addr)
 {
     int i =0;
-    while(pagetable[i].vaddr != addr){
+    while(coremap[i].vaddr != addr){
         
         i++;
         
     }
     
-    int len =pagetable[i].lenblock;
+    int len =coremap[i].lenblock;
     for(; i < len;i++){
         
-        pagetable[i].state = free;
-        pagetable[i].lenblock = -1;
+        coremap[i].used = 1;
+        coremap[i].lenblock = -1;
         
     }
 }
