@@ -9,7 +9,7 @@
 
 
 #if OPT_A3
-/*
+
 enum page_state {
    
    free,
@@ -18,7 +18,7 @@ enum page_state {
    dirty
    
 };
-*/
+
 
 /*
 */
@@ -27,31 +27,19 @@ To free a page, you must know which virtual address it points to, which is accom
 */
 
 
-
-struct coremap{
-
-/* Important stuff:
-Two ways to handle this, map page tables using paddr, or map using vaddr
-
-*/
-   //enum page_state state; 
-//struct addrspace* as;
+struct page{
+    
+    
+    enum page_state;
     vaddr_t vaddr;
-    paddr_t paddr;
-    int valid;
-    int used;
-    int lenblock; // length of the block
-  // uint64_t timestamp;
-   
+    struct addrspace *as;
+
+    
 };
 
-struct lock* table_lock; // a lock to protect the page table
 
 
-int coremap_size;
-int pt_initialize;
 
-struct coremap* coremap;
 
 
 
