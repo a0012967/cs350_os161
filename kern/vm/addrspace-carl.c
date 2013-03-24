@@ -58,7 +58,7 @@ getppages(unsigned long npages){
         
     }
     
- 
+    
     return 0; //if not successful
     
     
@@ -84,15 +84,15 @@ getppages(unsigned long npages){
 vaddr_t 
 alloc_kpages(int npages)
 {
-//virtually no change, only the implementation of getppages
+    //virtually no change, only the implementation of getppages
 	paddr_t pa;
 	pa = getppages(npages);
 	if (pa==0) {
 		return 0;
 	}
 	return PADDR_TO_KVADDR(pa);
-
-
+    
+    
 }
 
 
@@ -105,7 +105,7 @@ free_kpages(vaddr_t addr)
         i++;
         
     }
-   
+    
     int len =pagetable[i].lenblock;
     for(; i < len;i++){
         
@@ -137,11 +137,11 @@ as_create(void)
 	if (as==NULL) {
 		return NULL;
 	}
-
+    
 	/*
 	 * Initialize as needed.
 	 */
-
+    
 	return as;
 }
 
@@ -149,16 +149,16 @@ int
 as_copy(struct addrspace *old, struct addrspace **ret)
 {
 	struct addrspace *newas;
-
+    
 	newas = as_create();
 	if (newas==NULL) {
 		return ENOMEM;
 	}
-
+    
 	/*
 	 * Write this.
 	 */
-
+    
 	(void)old;
 	
 	*ret = newas;
@@ -181,7 +181,7 @@ as_activate(struct addrspace *as)
 	/*
 	 * Write this.
 	 */
-
+    
 	(void)as;  // suppress warning until code gets written
 }
 
@@ -197,12 +197,12 @@ as_activate(struct addrspace *as)
  */
 int
 as_define_region(struct addrspace *as, vaddr_t vaddr, size_t sz,
-		 int readable, int writeable, int executable)
+                 int readable, int writeable, int executable)
 {
 	/*
 	 * Write this.
 	 */
-
+    
 	(void)as;
 	(void)vaddr;
 	(void)sz;
@@ -218,7 +218,7 @@ as_prepare_load(struct addrspace *as)
 	/*
 	 * Write this.
 	 */
-
+    
 	(void)as;
 	return 0;
 }
@@ -229,7 +229,7 @@ as_complete_load(struct addrspace *as)
 	/*
 	 * Write this.
 	 */
-
+    
 	(void)as;
 	return 0;
 }
@@ -240,9 +240,9 @@ as_define_stack(struct addrspace *as, vaddr_t *stackptr)
 	/*
 	 * Write this.
 	 */
-
+    
 	(void)as;
-
+    
 	/* Initial user-level stack pointer */
 	*stackptr = USERSTACK;
 	
