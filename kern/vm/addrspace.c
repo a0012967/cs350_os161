@@ -7,6 +7,7 @@
 #include <addrspace.h>
 #include <vm.h>
 #include <pt.h>
+#include <coremap.h>
 #include <machine/tlb.h>
 #include "opt-A3.h"
 
@@ -16,12 +17,84 @@
 /* under dumbvm, always have 48k of user stack */
 #define DUMBVM_STACKPAGES    12
 
-void
-vm_bootstrap(void)
-{
-	/* Do nothing. */
-}
 
+void vm_bootstrap(){
+    
+    struct coremap *entry; //at the end should point to the same memory as pagetable in pt.h
+    coremap_size =0;
+    //allocating memory
+    
+    paddr_t firstaddr,lastaddr,freeaddr;
+    ram_getsize(&firstaddr,&lastaddr);
+    kprintf("ram getsize complete: firstaddr %u lastaddr: %u\n",firstaddr,lastaddr);
+    //page size defined in vm.h
+    coremap_size = (lastaddr-firstaddr)/PAGE_SIZE; //addr alignment, nOTE: This rounds out to a whole number
+    
+    coremap = (struct coremap *)PADDR_TO_KVADDR(firstaddr); //sets the page array
+    kprintf("coremap\n");
+    if(coremap== NULL){
+        panic("Can't create page table, no mem\n");
+    }
+    
+    freeaddr = firstaddr + coremap_size * sizeof(struct coremap);
+    kprintf("freeaddr\n");
+    if(lastaddr-freeaddr <= 0){
+        
+        panic("OUT OF MEMORYn");
+    }
+    // freee addr to lastaddr is the systems main memory
+    //the actual init
+    
+   // struct coremap * p = (struct coremap *) PADDR_TO_KVADDR((paddr_t)coremap);
+    kprintf("p coremap_Size %d\n",coremap_size);
+    entry = coremap;
+    int i;
+    for(i =0;i<coremap_size;i++){
+        //kprintf("for loop start\n");
+        //p->state = fixed; //fixed
+        if(i==((freeaddr-firstaddr)/PAGE_SIZE)){
+            coremap->valid = 0;
+            //kprintf("valid");
+            coremap->used = 1;
+            
+        }
+        else{
+            
+            coremap->valid = 1;
+            coremap->used =0;
+            
+        }
+        //kprintf("used\n");
+        coremap->paddr = firstaddr+(i*coremap_size);
+        //kprintf("p paddr\n");
+        //coremap[i].lenblock = -1; //initially -1
+        // p->pid = -1; //indicate no process has this yet
+        //p->vaddr = PADDR_TO_KVADDR(firstaddr)+(i* page_size);
+        //coremap[i] = *p;
+        //  coremap_size++;
+        coremap+= sizeof(struct coremap);
+        
+    }
+    
+    coremap = entry;
+    /*
+    for(;i<coremap_size;i++){
+        // p->state = free; //marked as free
+        //kprintf("2nd forloop\n");
+        coremap[i].valid = 1;
+        //kprintf("valid");
+        coremap[i].used = 0;
+       // kprintf("used\n");
+        coremap[i].paddr = firstaddr+(i*coremap_size);
+       // kprintf("p paddr\n");
+        
+    }*/
+    
+    kprintf("Done init\n");
+    pt_initialize =1;
+    kprintf("VM BOOTSTRAP COMPLETE: page size: %d, coremap size:%d\n",PAGE_SIZE,coremap_size);
+    
+}
 /*
  Does most of the work for alloc
  */
