@@ -31,7 +31,7 @@
 /* Allocate/free some kernel-space virtual pages */
 
 
-
+/*
 void vm_bootstrap(){
 
    struct page *entry; //at the end should point to the same memory as pagetable in pt.h
@@ -83,3 +83,4 @@ struct page * p = (struct page *) PADDR_TO_KVADDR((paddr_t)pagetable);
    pt_initialize =1;
 
 }
+*/
