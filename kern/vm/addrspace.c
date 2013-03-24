@@ -176,6 +176,12 @@ as_create(void)
         
 #if OPT_A3
 
+        as->pagetable = array_create();
+        
+        if (as->pagetable == NULL)
+            return NULL;
+        
+        
 	as->as_vbase1 = 0;
 	as->as_pbase1 = 0;
 	as->as_npages1 = 0;

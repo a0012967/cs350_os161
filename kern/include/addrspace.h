@@ -24,8 +24,7 @@ struct addrspace {
 	paddr_t as_stackpbase;
 #else     
     //OPT_A3
-    paddr_t as_page_dir;
-    struct 
+    paddr_t as_page_dir; 
         
     vaddr_t as_vbase1;
 	paddr_t as_pbase1;
