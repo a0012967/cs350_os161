@@ -95,36 +95,27 @@ void vm_bootstrap(){
     kprintf("VM BOOTSTRAP COMPLETE: page size: %d, coremap size:%d\n",PAGE_SIZE,coremap_size);
     
 }
-/*
- Does most of the work for alloc
- */
+    /*
+     Does most of the work for alloc
+     */
 static
 paddr_t
-getppages(unsigned long npages){
-    
-
-	int spl;
-	paddr_t addr;
-    
-	spl = splhigh();
-    
-	addr = ram_stealmem(npages);
-	
-	splx(spl);
-	return addr;
-    
-}
-
-
-vaddr_t 
-alloc_kpages(int npages)
+getppages(unsigned long npages)
 {
     
 #if OPT_A3
     //lock_acquire(table_lock);
+    //alloc_kpages can be called before vm_bootstrap so
+    //we just stealmem
     if(pt_initialize != 1){
+        int spl;
+        paddr_t addr;
+        spl = splhigh();
         
-        panic("PAGE TABLE NOT INITIALIZE\N");
+        addr =  ram_stealmem(npages);
+        splx(spl);
+        return addr;
+        //panic("PAGE TABLE NOT INITIALIZE\N");
         
     }
     
@@ -180,6 +171,21 @@ alloc_kpages(int npages)
 #endif
 
 
+}
+
+
+
+vaddr_t 
+alloc_kpages(int npages)
+{
+    //virtually no change, only the implementation of getppages
+	paddr_t pa;
+	pa = getppages(npages);
+	if (pa==0) {
+		return 0;
+	}
+	return PADDR_TO_KVADDR(pa);
+    
 }
 
 

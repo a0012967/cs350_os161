@@ -100,13 +100,22 @@ void vm_bootstrap(){
  */
 static
 paddr_t
-getppages(unsigned long npages){
+getppages(unsigned long npages)
+{
     
 #if OPT_A3
     //lock_acquire(table_lock);
+    //alloc_kpages can be called before vm_bootstrap so
+    //we just stealmem
     if(pt_initialize != 1){
+        int spl;
+        paddr_t addr;
+        spl = splhigh();
         
-        panic("PAGE TABLE NOT INITIALIZE\N");
+        addr =  ram_stealmem(npages);
+        splx(spl);
+        return addr;
+        //panic("PAGE TABLE NOT INITIALIZE\N");
         
     }
     
@@ -160,11 +169,16 @@ getppages(unsigned long npages){
 	return addr;
     
 #endif
+    
+    
 }
+
+
 
 vaddr_t 
 alloc_kpages(int npages)
 {
+    //virtually no change, only the implementation of getppages
 	paddr_t pa;
 	pa = getppages(npages);
 	if (pa==0) {
@@ -178,8 +192,7 @@ alloc_kpages(int npages)
 void 
 free_kpages(vaddr_t addr)
 {
-    
-	int i =0;
+    int i =0;
     while(coremap[i].vaddr != addr){
         
         i++;
@@ -308,6 +321,12 @@ as_create(void)
     
 #if OPT_A3
     
+    as->pagetable = array_create();
+    
+    if (as->pagetable == NULL)
+        return NULL;
+    
+    
 	as->as_vbase1 = 0;
 	as->as_pbase1 = 0;
 	as->as_npages1 = 0;
@@ -404,9 +423,14 @@ as_activate(struct addrspace *as)
     
 	spl = splhigh();
     
-	for (i=0; i<NUM_TLB; i++) {
-		TLB_Write(TLBHI_INVALID(i), TLBLO_INVALID(), i);
-	}
+	// invalidate entries in TLB only if address spaces are different
+    
+    if (as != curthread->t_vmspace)
+    {
+        for (i=0; i<NUM_TLB; i++) {
+            TLB_Write(TLBHI_INVALID(i), TLBLO_INVALID(), i);
+        }
+    }
     
 	splx(spl);
 #else
