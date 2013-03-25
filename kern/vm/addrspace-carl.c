@@ -102,19 +102,65 @@ static
 paddr_t
 getppages(unsigned long npages){
     
+#if OPT_A3
+    //lock_acquire(table_lock);
+    if(pt_initialize != 1){
+        
+        panic("PAGE TABLE NOT INITIALIZE\N");
+        
+    }
     
+    int i;
+    unsigned long count_pages;
+    for(i = 0; i< coremap_size; i++){
+        
+        if(coremap[i].valid == 1 && coremap[i].used == 0){
+            
+            count_pages++;
+            if(count_pages == npages){
+                i++;
+                break;
+            }
+        }
+        else{
+            
+            count_pages = 0;
+        }
+        
+        
+    }
+    
+    if(count_pages == npages){
+        int j;
+        for(j =i - npages +1;j<coremap_size;j++){
+            
+            coremap[j].used= 1;
+            
+            
+        }
+        return coremap[i-npages+1].paddr;
+        
+    }
+    
+    
+    return 0; //if not successful
+    
+    
+    
+    
+#else
 	int spl;
 	paddr_t addr;
     
 	spl = splhigh();
     
 	addr = ram_stealmem(npages);
-	
+    
 	splx(spl);
 	return addr;
     
+#endif
 }
-
 
 vaddr_t 
 alloc_kpages(int npages)
@@ -133,7 +179,20 @@ void
 free_kpages(vaddr_t addr)
 {
     
-	(void)addr;
+	int i =0;
+    while(coremap[i].vaddr != addr){
+        
+        i++;
+        
+    }
+    
+    int len =coremap[i].lenblock;
+    for(; i < len;i++){
+        
+        coremap[i].used = 1;
+        coremap[i].lenblock = -1;
+        
+    }
 }
 
 int
