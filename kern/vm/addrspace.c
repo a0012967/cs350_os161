@@ -50,11 +50,10 @@ void vm_bootstrap(){
     entry = coremap;
     int i;
     for(i =0;i<coremap_size;i++){
-        //kprintf("for loop start\n");
-        //p->state = fixed; //fixed
+        
         if(i==((freeaddr-firstaddr)/PAGE_SIZE)){
             coremap->valid = 0;
-            //kprintf("valid");
+            
             coremap->used = 1;
             
         }
@@ -64,31 +63,19 @@ void vm_bootstrap(){
             coremap->used =0;
             
         }
-        //kprintf("used\n");
+        
         coremap->paddr = firstaddr+(i*coremap_size);
-        //kprintf("p paddr\n");
-        //coremap[i].lenblock = -1; //initially -1
-        // p->pid = -1; //indicate no process has this yet
-        //p->vaddr = PADDR_TO_KVADDR(firstaddr)+(i* page_size);
-        //coremap[i] = *p;
-        //  coremap_size++;
+        //coremap->vaddr = PADDR_TO_KVADDR(coremap->paddr);
+        coremap->len = -1;
+        coremap->readable = -1;
+        coremap->writable = -1;
+        coremap->executable = -1;
         coremap+= sizeof(struct coremap);
         
     }
     
     coremap = entry;
-    /*
-    for(;i<coremap_size;i++){
-        // p->state = free; //marked as free
-        //kprintf("2nd forloop\n");
-        coremap[i].valid = 1;
-        //kprintf("valid");
-        coremap[i].used = 0;
-       // kprintf("used\n");
-        coremap[i].paddr = firstaddr+(i*coremap_size);
-       // kprintf("p paddr\n");
-        
-    }*/
+
     
     kprintf("Done init\n");
     pt_initialize =1;
@@ -119,14 +106,15 @@ getppages(unsigned long npages)
         
     }
     
-    int i;
+    int i,j;
     unsigned long count_pages;
     for(i = 0; i< coremap_size; i++){
-        
+        j = i - npages + 1;
         if(coremap[i].valid == 1 && coremap[i].used == 0){
             
             count_pages++;
             if(count_pages == npages){
+            	coremap[j].len = npages;
                 i++;
                 break;
             }
@@ -140,7 +128,7 @@ getppages(unsigned long npages)
     }
     
     if(count_pages == npages){
-        int j;
+       // int j;
         for(j =i - npages +1;j<coremap_size;j++){
             
             coremap[j].used= 1;
@@ -193,17 +181,17 @@ void
 free_kpages(vaddr_t addr)
 {
     int i =0;
-    while(coremap[i].vaddr != addr){
+    while(PADDR_TO_KVADDR(coremap[i].paddr) != addr){
         
         i++;
         
     }
     
-    int len =coremap[i].lenblock;
+    int len =coremap[i].len;
     for(; i < len;i++){
         
         coremap[i].used = 1;
-        coremap[i].lenblock = -1;
+        coremap[i].len = -1;
         
     }
 }

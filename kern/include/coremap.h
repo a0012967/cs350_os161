@@ -2,6 +2,10 @@
 #define _COREMAP_H_
 
 
+
+
+
+
 struct coremap{
     
     /* Important stuff:
@@ -10,11 +14,14 @@ struct coremap{
      */
     //enum page_state state; 
     //struct addrspace* as;
-    vaddr_t vaddr;
+    //vaddr_t vaddr;
     paddr_t paddr;
     int valid;
     int used;
-    int lenblock; // length of the block
+    int readable;
+    int writable;
+    int executable;
+    int len; // length of the block
     // uint64_t timestamp;
     
 };
