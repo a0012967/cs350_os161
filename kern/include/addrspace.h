@@ -42,7 +42,7 @@ struct addrspace {
 	paddr_t as_stackpbase;
     
     //struct array *pagetable;
-    struct page* pagetable; // initialize during as_create
+    struct pagetable* pt; // initialize during as_create
 #endif
 };
 

@@ -34,10 +34,16 @@ struct page{
 
 
 
-struct page* pagetable_create();
+struct pagetable{
+    struct page *pt[N_PAGES];
+}
 
 
 
+
+int pagetable_create(addrspace *as);
+
+int pagetable_destroy(addrspace *as);
 #endif 
 
 
