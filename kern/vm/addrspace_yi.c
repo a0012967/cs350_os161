@@ -90,6 +90,22 @@ as_create(void)
 	/*
 	 * Initialize as needed.
 	 */
+#if OPT_A3
+    as_page_dir = alloc_kpages(1);
+	as->as_vbase1 = 0;
+	as->as_pbase1 = 0;
+	as->as_npages1 = 0;
+	as->as_vbase2 = 0;
+	as->as_pbase2 = 0;
+	as->as_npages2 = 0;
+	as->as_stackpbase = 0;
+    
+    //initialize pagetable for as
+    int result = pagetable_create(as);
+    if (result != 0) {
+        //there was an error, do something here?
+    }
+#endif
 
 	return as;
 }
@@ -120,7 +136,11 @@ as_destroy(struct addrspace *as)
 	/*
 	 * Clean up as needed.
 	 */
-	
+	int result = pagetable_destroy(as);
+    
+    if (result != 0)    {
+        //pagetable wasn't destroyed properly, do something about it?
+    }
 	kfree(as);
 }
 

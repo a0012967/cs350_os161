@@ -79,7 +79,7 @@ vm_fault(int faulttype, vaddr_t faultaddress)
  */
 
 struct addrspace *
-as_create(void)
+as_create(void) // YI:   I MOVED THIS TO addrspace_yi.c due to the new implementation play- Monday night, March 25
 {
 	struct addrspace *as = kmalloc(sizeof(struct addrspace));
 	if (as==NULL) {
