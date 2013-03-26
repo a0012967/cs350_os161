@@ -26,8 +26,7 @@ void vm_bootstrap(){
     
     paddr_t firstaddr,lastaddr,freeaddr;
     ram_getsize(&firstaddr,&lastaddr);
-    kprintf("ram getsize complete: firstaddr %u lastaddr: %u\n",firstaddr,lastaddr);
-    //page size defined in vm.h
+
     coremap_size = (lastaddr-firstaddr)/PAGE_SIZE; //addr alignment, nOTE: This rounds out to a whole number
     
     coremap = (struct coremap *)PADDR_TO_KVADDR(firstaddr); //sets the page array
@@ -45,41 +44,40 @@ void vm_bootstrap(){
     // freee addr to lastaddr is the systems main memory
     //the actual init
     
-   // struct coremap * p = (struct coremap *) PADDR_TO_KVADDR((paddr_t)coremap);
+    struct coremap * p = (struct coremap *) PADDR_TO_KVADDR((paddr_t)coremap);
     kprintf("p coremap_Size %d\n",coremap_size);
     entry = coremap;
     int i;
     for(i =0;i<coremap_size;i++){
         
-        if(i==((freeaddr-firstaddr)/PAGE_SIZE)){
+        if(i<((freeaddr-firstaddr)/PAGE_SIZE)){
             coremap->valid = 0;
-            
             coremap->used = 1;
-            
+
         }
         else{
             
             coremap->valid = 1;
             coremap->used =0;
             
+          
         }
         
         coremap->paddr = firstaddr+(i*coremap_size);
-        //coremap->vaddr = PADDR_TO_KVADDR(coremap->paddr);
         coremap->len = -1;
         coremap->readable = -1;
         coremap->writable = -1;
         coremap->executable = -1;
-        coremap+= sizeof(struct coremap);
+        coremap++;
+      
         
     }
     
     coremap = entry;
 
-    
-    kprintf("Done init\n");
     pt_initialize =1;
-    kprintf("VM BOOTSTRAP COMPLETE: page size: %d, coremap size:%d\n",PAGE_SIZE,coremap_size);
+
+  kprintf("VM BOOTSTRAP COMPLETE: page size: %d, coremap size:%d\n",PAGE_SIZE,coremap_size);
     
 }
     /*
@@ -89,12 +87,13 @@ static
 paddr_t
 getppages(unsigned long npages)
 {
-    
+   // kprintf("call to getpages\n");
 #if OPT_A3
     //lock_acquire(table_lock);
     //alloc_kpages can be called before vm_bootstrap so
     //we just stealmem
     if(pt_initialize != 1){
+        //kprintf("pt unintilize\n");
         int spl;
         paddr_t addr;
         spl = splhigh();
@@ -108,19 +107,18 @@ getppages(unsigned long npages)
     
     int i,j;
     unsigned long count_pages;
+   // kprintf("getppages: about to count coremap\n");
     for(i = 0; i< coremap_size; i++){
         j = i - npages + 1;
-        if(coremap[i].valid == 1 && coremap[i].used == 0){
+        if(coremap[i].valid && !(coremap[i].used)){
             
             count_pages++;
             if(count_pages == npages){
             	coremap[j].len = npages;
-                i++;
                 break;
             }
         }
         else{
-            
             count_pages = 0;
         }
         
@@ -135,10 +133,10 @@ getppages(unsigned long npages)
             
             
         }
+        
         return coremap[i-npages+1].paddr;
         
     }
-    
     
     return 0; //if not successful
     
@@ -166,13 +164,24 @@ getppages(unsigned long npages)
 vaddr_t 
 alloc_kpages(int npages)
 {
+    
+ 
     //virtually no change, only the implementation of getppages
 	paddr_t pa;
 	pa = getppages(npages);
+
 	if (pa==0) {
+        
+        kprintf("pa == 0\n");
 		return 0;
 	}
-	return PADDR_TO_KVADDR(pa);
+
+	 
+	 vaddr_t va;
+	 va = PADDR_TO_KVADDR(pa);
+
+	 return va;
+	
     
 }
 
@@ -186,13 +195,14 @@ free_kpages(vaddr_t addr)
         i++;
         
     }
+    assert(coremap[i].len != -1);
     
     int len =coremap[i].len;
-    for(; i < len;i++){
-        
-        coremap[i].used = 1;
-        coremap[i].len = -1;
-        
+    
+    coremap[i].len = -1;
+    
+    for(i = 0; i < len;i++){
+        coremap[i].used = 0;
     }
 }
 
@@ -215,7 +225,13 @@ vm_fault(int faulttype, vaddr_t faultaddress)
 	switch (faulttype) {
 	    case VM_FAULT_READONLY:
 		/* We always create pages read-write, so we can't get this */
-		panic("dumbvm: got VM_FAULT_READONLY\n");
+		
+		#if OPT_A3
+		   _exit(-1);
+		
+		#else
+		   panic("dumbvm: got VM_FAULT_READONLY\n");
+	   #endif
 	    case VM_FAULT_READ:
 	    case VM_FAULT_WRITE:
 		break;
@@ -233,8 +249,39 @@ vm_fault(int faulttype, vaddr_t faultaddress)
 		 */
 		return EFAULT;
 	}
+#if OPT_A3
+
+
+/*
+   
+   struct page* p;
+   int i;
+   for(i = 0; i< array_getnum(as->pagetable);i++){
+      
+      p = array_getguy(as->pagetable, i);
+      
+      if(p->vaddr == faultaddress){
+      
+      
+      }
+      else{
+      
+         paddr = (p->vaddr)-MIPS_KSEG0; //need a physical address
+         
+      }
+   
+   
+   
+   
+   }//for loop
+
+*/
+
+
+
 
 	/* Assert that the address space has been set up properly. */
+	/*
 	assert(as->as_vbase1 != 0);
 	assert(as->as_pbase1 != 0);
 	assert(as->as_npages1 != 0);
@@ -268,10 +315,10 @@ vm_fault(int faulttype, vaddr_t faultaddress)
 		splx(spl);
 		return EFAULT;
 	}
-
+*/
 	/* make sure it's page-aligned */
-	assert((paddr & PAGE_FRAME)==paddr);
-
+	//assert((paddr & PAGE_FRAME)==paddr);
+#else
 	for (i=0; i<NUM_TLB; i++) {
 		TLB_Read(&ehi, &elo, i);
 		if (elo & TLBLO_VALID) {
@@ -284,7 +331,7 @@ vm_fault(int faulttype, vaddr_t faultaddress)
 		splx(spl);
 		return 0;
 	}
-
+#endif
 	kprintf("dumbvm: Ran out of TLB entries - cannot handle page fault\n");
 	splx(spl);
 	return EFAULT;
@@ -442,11 +489,12 @@ as_define_region(struct addrspace *as, vaddr_t vaddr, size_t sz,
 {
 #if OPT_A3
     size_t npages; 
-
+    
+  //  kprintf("Pageframe: %x, size %d\n",PAGE_FRAME,sz);
 	/* Align the region. First, the base... */
 	sz += vaddr & ~(vaddr_t)PAGE_FRAME;
 	vaddr &= PAGE_FRAME;
-
+  //  kprintf("Pageframe after: %x, size %d\n",PAGE_FRAME,sz);
 	/* ...and now the length. */
 	sz = (sz + PAGE_SIZE - 1) & PAGE_FRAME;
 
@@ -495,10 +543,11 @@ int
 as_prepare_load(struct addrspace *as)
 {
 #if OPT_A3
-        assert(as->as_pbase1 == 0);
+    
+    assert(as->as_pbase1 == 0);
 	assert(as->as_pbase2 == 0);
 	assert(as->as_stackpbase == 0);
-
+    
 	as->as_pbase1 = getppages(as->as_npages1);
 	if (as->as_pbase1 == 0) {
 		return ENOMEM;

@@ -10,14 +10,7 @@
 
 #if OPT_A3
 
-enum page_state {
-    
-    free,
-    fixed,
-    clean,
-    dirty
-    
-};
+
 
 enum permission   {
     readable, writeable, executable  
@@ -33,12 +26,10 @@ enum permission   {
 
 struct page{
     
-    
-    enum page_state;
     vaddr_t vaddr;
     struct addrspace *as;
+    int valid;
     enum permission;
-    
 };
 
 
