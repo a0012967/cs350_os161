@@ -29,7 +29,7 @@
 #if OPT_A3
 
 
-int pagetable_create(addrspace *as)     { // as = the addrspace that this pt will be attached to
+int pagetable_create(struct addrspace *as){ // as = the addrspace that this pt will be attached to
     struct pagetable *table = kmalloc(sizeof(struct pagetable));
     
     if (table == NULL) {
@@ -40,15 +40,15 @@ int pagetable_create(addrspace *as)     { // as = the addrspace that this pt wil
     
     //initialize pagetable with blank entries
     for (i = 0; i < N_PAGES; i++)   {
-        struct page e= kmalloc(sizeof(struct page));
+        struct page * e= kmalloc(sizeof(struct page));
         
         if (e == NULL)  {
             return ENOMEM;
         }
         
-        e->page_state = free;
+        e->valid = 0;
         e->vaddr=0; // for now??
-        e->as = as; // we should remove this...
+        //e->as = as; // we should remove this...
         e->permission = readable; //we should discuss this, what is the dirty bit for a non-valid page?
         
         table->pt[i] = e;
@@ -59,7 +59,7 @@ int pagetable_create(addrspace *as)     { // as = the addrspace that this pt wil
 
 
 
-int pagetable_destroy(addrspace *as)     { // destroy the pagetable of the addrspace as
+int pagetable_destroy(struct addrspace *as)     { // destroy the pagetable of the addrspace as
     if (as == NULL) {
         return EAGAIN;
     }

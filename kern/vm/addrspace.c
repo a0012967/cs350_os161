@@ -354,9 +354,9 @@ as_create(void)
         
 #if OPT_A3
 
-        as->pagetable = array_create();
+        as->pt = array_create();
         
-        if (as->pagetable == NULL)
+        if (as->pt == NULL)
             return NULL;
         
         

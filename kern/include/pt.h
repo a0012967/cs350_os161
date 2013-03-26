@@ -3,13 +3,15 @@
 
 //#include <vm.h>
 #include <types.h>
-
+#include <addrspace.h>
 #include "opt-A3.h"
 
 
 
 #if OPT_A3
-
+#ifndef N_PAGES
+#define N_PAGES ((USERTOP-MIPS_KUSEG)/PAGE_SIZE)
+#endif
 
 
 enum permission   {
@@ -28,7 +30,7 @@ struct page{
     
     vaddr_t vaddr;
     int valid;
-    enum permission;
+    enum permission permission;
 };
 
 
@@ -36,14 +38,14 @@ struct page{
 
 struct pagetable{
     struct page *pt[N_PAGES];
-}
+};
 
 
 
 
-int pagetable_create(addrspace *as);
+int pagetable_create(struct addrspace *as);
 
-int pagetable_destroy(addrspace *as);
+int pagetable_destroy(struct addrspace *as);
 #endif 
 
 
