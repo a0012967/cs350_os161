@@ -13,7 +13,7 @@
 
 
 enum permission   {
-    readable, writeable, executable  
+    read, write, exec, rw, re,we,rwe  
 };
 
 
