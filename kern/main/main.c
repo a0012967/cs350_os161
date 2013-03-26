@@ -16,6 +16,7 @@
 #include <vm.h>
 #include <syscall.h>
 #include <version.h>
+#include <uw-vmstats.h>
 #include "opt-A2.h"
 
 /*
@@ -87,7 +88,9 @@ boot(void)
 	/* Default bootfs - but ignore failure, in case emu0 doesn't exist */
 	vfs_setbootfs("emu0");
 
-
+        /* Uncomment to initialize Instrumentation (i.e. TLB stats) */
+        //vmstats_init();
+        
 	/*
 	 * Make sure various things aren't screwed up.
 	 */
@@ -113,6 +116,9 @@ shutdown(void)
 
 	scheduler_shutdown();
 	thread_shutdown();
+        
+        /* Uncomment to print Instrumentation (i.e. TLB stats) */
+        //vmstats_print();
 }
 
 /*****************************************/

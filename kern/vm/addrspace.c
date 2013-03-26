@@ -9,6 +9,7 @@
 #include <pt.h>
 #include <coremap.h>
 #include <machine/tlb.h>
+#include <vm-tlb.h>
 #include "opt-A3.h"
 
 
@@ -211,34 +212,19 @@ vm_fault(int faulttype, vaddr_t faultaddress)
 	paddr_t paddr;
 	int i;
 	u_int32_t ehi, elo;
-	struct addrspace *as;
-	int spl;
+	struct addrspace *as = curthread->t_vmspace;
+	//int spl;
+        
+        int p_i;
 
-	spl = splhigh();
+	//spl = splhigh();
+        lock_acquire(as->tlb->tlb_lock);
 
 	faultaddress &= PAGE_FRAME;
 
 	DEBUG(DB_VM, "dumbvm: fault: 0x%x\n", faultaddress);
 
-	switch (faulttype) {
-	    case VM_FAULT_READONLY:
-		/* We always create pages read-write, so we can't get this */
-		
-		#if OPT_A3
-		   _exit(-1);
-		
-		#else
-		   panic("dumbvm: got VM_FAULT_READONLY\n");
-	   #endif
-	    case VM_FAULT_READ:
-	    case VM_FAULT_WRITE:
-		break;
-	    default:
-		splx(spl);
-		return EINVAL;
-	}
-
-	as = curthread->t_vmspace;
+        
 	if (as == NULL) {
 		/*
 		 * No address space set up. This is probably a kernel
@@ -247,39 +233,8 @@ vm_fault(int faulttype, vaddr_t faultaddress)
 		 */
 		return EFAULT;
 	}
-#if OPT_A3
-
-
-/*
-   
-   struct page* p;
-   int i;
-   for(i = 0; i< array_getnum(as->pagetable);i++){
-      
-      p = array_getguy(as->pagetable, i);
-      
-      if(p->vaddr == faultaddress){
-      
-      
-      }
-      else{
-      
-         paddr = (p->vaddr)-MIPS_KSEG0; //need a physical address
-         
-      }
-   
-   
-   
-   
-   }//for loop
-
-*/
-
-
-
 
 	/* Assert that the address space has been set up properly. */
-	/*
 	assert(as->as_vbase1 != 0);
 	assert(as->as_pbase1 != 0);
 	assert(as->as_npages1 != 0);
@@ -310,13 +265,64 @@ vm_fault(int faulttype, vaddr_t faultaddress)
 		paddr = (faultaddress - stackbase) + as->as_stackpbase;
 	}
 	else {
-		splx(spl);
+		//splx(spl);
+                lock_release(as->tlb->tlb_lock);
 		return EFAULT;
 	}
-*/
+
 	/* make sure it's page-aligned */
-	//assert((paddr & PAGE_FRAME)==paddr);
-#else
+	assert((paddr & PAGE_FRAME)==paddr);
+        
+        p_i = faultaddress/PAGE_SIZE;
+        
+        if (p_i < 0)
+            panic("addrspace: invalid page table index\n");
+        
+        struct page *pg;
+        
+	switch (faulttype) {
+	    case VM_FAULT_READONLY:
+                
+                // we double check that the user has indeed permission to write to page
+
+                pg = as->pt->pt[p_i]; 
+                
+                    if (pg->permission == 1) // can be written to, as set in as_defined_region
+                    {
+                        int tlb_entry = TLB_Probe(faultaddress, 0);
+                        
+                        TLB_Read(&ehi, &elo, tlb_entry);
+                        
+                        if (ehi != faultaddress)
+                            panic("vm_fault: ehi not equal to faultaddr\n");
+                        
+                        elo = paddr | TLBLO_DIRTY | TLBLO_VALID;
+                        
+                        TLB_Write(ehi, elo, tlb_entry);
+                        
+                        break;
+                    }
+                    else
+                    {
+                        _exit(0);   
+                    }
+                
+		/* We always create pages read-write, so we can't get this */
+		//panic("dumbvm: got VM_FAULT_READONLY\n");
+	    case VM_FAULT_READ: // need to add a new page
+                
+                break;
+                
+	    case VM_FAULT_WRITE:
+		break;
+	    default:
+		//splx(spl);
+                lock_release(as->tlb->tlb_lock);
+		return EINVAL;
+	}
+
+	
+
 	for (i=0; i<NUM_TLB; i++) {
 		TLB_Read(&ehi, &elo, i);
 		if (elo & TLBLO_VALID) {
@@ -326,13 +332,22 @@ vm_fault(int faulttype, vaddr_t faultaddress)
 		elo = paddr | TLBLO_DIRTY | TLBLO_VALID;
 		DEBUG(DB_VM, "dumbvm: 0x%x -> 0x%x\n", faultaddress, paddr);
 		TLB_Write(ehi, elo, i);
-		splx(spl);
+		//splx(spl);
+                lock_release(as->tlb->tlb_lock);
 		return 0;
 	}
-#endif
+
+        // need a replacement algorithm
 	kprintf("dumbvm: Ran out of TLB entries - cannot handle page fault\n");
-	splx(spl);
-	return EFAULT;
+	//splx(spl);
+        int victim = tlb_get_rr_victim();
+        if (victim <= 0 || victim >= NUM_TLB)
+            return EFAULT;
+        
+        TLB_Write(ehi, elo, victim);
+        
+        lock_release(as->tlb->tlb_lock);
+	return 0;
 }
 
 
@@ -359,6 +374,14 @@ as_create(void)
         if (as->pt == NULL)
             return NULL;
         
+        // create the lock for the tlb table
+        as->tlb->tlb_lock = lock_create("tlb lock");
+        
+        if (as->tlb->tlb_lock == NULL)
+            panic("as_create: Cannot create tlb lock\n");
+        
+        // initialize next victim for round robin algo
+        as->tlb->next_victim = 0;
         
 	as->as_vbase1 = 0;
 	as->as_pbase1 = 0;
@@ -433,7 +456,11 @@ void
 as_destroy(struct addrspace *as)
 {
 #if OPT_A3
+    
+    lock_destroy(as->tlb);
+    array_destroy(as->pt);
     kfree(as);
+    
 #else
 	/*
 	 * Clean up as needed.

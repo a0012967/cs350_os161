@@ -2,6 +2,181 @@
 <configurationDescriptor version="84">
   <logicalFolder name="root" displayName="root" projectFiles="true" kind="ROOT">
     <df name="os161-1.11" root=".">
+      <df name="a3-test-scripts">
+        <df name=".sockets">
+        </df>
+        <df name="bin">
+          <in>cat</in>
+          <in>cp</in>
+          <in>false</in>
+          <in>ln</in>
+          <in>ls</in>
+          <in>mkdir</in>
+          <in>mv</in>
+          <in>pwd</in>
+          <in>rm</in>
+          <in>rmdir</in>
+          <in>sh</in>
+          <in>sync</in>
+          <in>true</in>
+        </df>
+        <df name="testbin">
+          <in>add</in>
+          <in>argtest</in>
+          <in>badcall</in>
+          <in>bigfile</in>
+          <in>conman</in>
+          <in>crash</in>
+          <in>ctest</in>
+          <in>dirconc</in>
+          <in>dirseek</in>
+          <in>dirtest</in>
+          <in>f_test</in>
+          <in>farm</in>
+          <in>faulter</in>
+          <in>filetest</in>
+          <in>forkbomb</in>
+          <in>forktest</in>
+          <in>guzzle</in>
+          <in>hash</in>
+          <in>hog</in>
+          <in>huge</in>
+          <in>kitchen</in>
+          <in>matmult</in>
+          <in>palin</in>
+          <in>parallelvm</in>
+          <in>randcall</in>
+          <in>rmdirtest</in>
+          <in>rmtest</in>
+          <in>romemwrite</in>
+          <in>sink</in>
+          <in>sort</in>
+          <in>sparse</in>
+          <in>sty</in>
+          <in>tail</in>
+          <in>tictac</in>
+          <in>tlbfaulter</in>
+          <in>triplehuge</in>
+          <in>triplemat</in>
+          <in>triplesort</in>
+        </df>
+        <df name="uw-testbin">
+          <in>argtest</in>
+          <in>conc-io</in>
+          <in>files1</in>
+          <in>files2</in>
+          <in>segments</in>
+          <in>syscall</in>
+          <in>vm-crash1</in>
+          <in>vm-crash2</in>
+          <in>vm-crash3</in>
+          <in>vm-data1</in>
+          <in>vm-data2</in>
+          <in>vm-data3</in>
+          <in>vm-mix1</in>
+          <in>vm-mix1-exec</in>
+          <in>vm-mix1-fork</in>
+          <in>vm-mix2</in>
+          <in>vm-stack1</in>
+          <in>vm-stack2</in>
+          <in>writeread</in>
+        </df>
+        <df name="vm-crash1">
+          <in>Makefile</in>
+          <in>depend.mk</in>
+          <in>vm-crash1.c</in>
+        </df>
+        <df name="vm-crash2">
+          <in>Makefile</in>
+          <in>depend.mk</in>
+          <in>vm-crash2.c</in>
+        </df>
+        <df name="vm-crash3">
+          <in>Makefile</in>
+          <in>depend.mk</in>
+          <in>funcs.c</in>
+          <in>vm-crash3.c</in>
+        </df>
+        <df name="vm-data1">
+          <in>Makefile</in>
+          <in>depend.mk</in>
+          <in>vm-data1.c</in>
+        </df>
+        <df name="vm-data2">
+          <in>Makefile</in>
+          <in>depend.mk</in>
+          <in>vm-data2.c</in>
+        </df>
+        <df name="vm-data3">
+          <in>Makefile</in>
+          <in>depend.mk</in>
+          <in>funcs.c</in>
+          <in>vm-data3.c</in>
+        </df>
+        <df name="vm-mix1">
+          <in>Makefile</in>
+          <in>depend.mk</in>
+          <in>funcs.c</in>
+          <in>vm-mix1.c</in>
+        </df>
+        <df name="vm-mix1-fork">
+          <in>Makefile</in>
+          <in>depend.mk</in>
+          <in>funcs.c</in>
+          <in>vm-mix1-fork.c</in>
+        </df>
+        <df name="vm-mix2">
+          <in>Makefile</in>
+          <in>depend.mk</in>
+          <in>funcs.c</in>
+          <in>vm-mix2.c</in>
+        </df>
+        <df name="vm-stack1">
+          <in>Makefile</in>
+          <in>depend.mk</in>
+          <in>vm-stack1.c</in>
+        </df>
+        <df name="vm-stack2">
+          <in>Makefile</in>
+          <in>depend.mk</in>
+          <in>vm-stack2.c</in>
+        </df>
+        <in>Makefile</in>
+        <in>README</in>
+        <in>newtests.mk</in>
+        <in>run-batch-A3</in>
+        <in>run-batch-A3-all</in>
+        <in>run-batch-A3-option1</in>
+        <in>strip-text</in>
+        <in>sys161-2MB.conf</in>
+        <in>sys161-8MB.conf</in>
+        <in>sys161-9MB.conf</in>
+        <in>tarlist</in>
+        <in>test-vm-alt-replace</in>
+        <in>test-vm-basic</in>
+        <in>test-vm-big-fork</in>
+        <in>test-vm-big-fork-exec</in>
+        <in>test-vm-big-fork-exec-paging</in>
+        <in>test-vm-big-fork-paging</in>
+        <in>test-vm-big-no-fork</in>
+        <in>test-vm-consecutive</in>
+        <in>test-vm-consecutive-big-01</in>
+        <in>test-vm-consecutive-big-02</in>
+        <in>test-vm-consecutive-big-03</in>
+        <in>test-vm-consecutive-small-01</in>
+        <in>test-vm-crash</in>
+        <in>test-vm-ctest</in>
+        <in>test-vm-huge</in>
+        <in>test-vm-matmult</in>
+        <in>test-vm-matmult-alt</in>
+        <in>test-vm-paging</in>
+        <in>test-vm-parallelvm</in>
+        <in>test-vm-replace</in>
+        <in>test-vm-sort</in>
+        <in>test-vm-triplehuge</in>
+        <in>test-vm-triplemat</in>
+        <in>test-vm-triplesort</in>
+      </df>
       <df name="bin">
         <df name="cat">
           <in>cat.c</in>
@@ -186,6 +361,40 @@
               <in>types.h</in>
               <in>vm.h</in>
             </df>
+            <df name="machine">
+            </df>
+            <df name="machine">
+            </df>
+            <in>autoconf.c</in>
+            <in>autoconf.h</in>
+            <in>opt-A0.h</in>
+            <in>opt-A1.h</in>
+            <in>opt-A2.h</in>
+            <in>opt-A3.h</in>
+            <in>opt-A4.h</in>
+            <in>opt-A5.h</in>
+            <in>opt-dumbvm.h</in>
+            <in>opt-net.h</in>
+            <in>opt-netfs.h</in>
+            <in>opt-sfs.h</in>
+            <in>opt-synchprobs.h</in>
+            <in>vers.c</in>
+          </df>
+          <df name="ASST3">
+            <df name="machine">
+              <in>asmdefs.h</in>
+              <in>bus.h</in>
+              <in>ktypes.h</in>
+              <in>pcb.h</in>
+              <in>setjmp.h</in>
+              <in>specialreg.h</in>
+              <in>spl.h</in>
+              <in>switchframe.h</in>
+              <in>tlb.h</in>
+              <in>trapframe.h</in>
+              <in>types.h</in>
+              <in>vm.h</in>
+            </df>
             <in>autoconf.c</in>
             <in>autoconf.h</in>
             <in>opt-A0.h</in>
@@ -288,8 +497,12 @@
           <in>dev.h</in>
           <in>elf.h</in>
           <in>emufs.h</in>
+          <in>fileDescriptor.h</in>
+          <in>file_syscall.h</in>
           <in>fs.h</in>
           <in>lib.h</in>
+          <in>process.h</in>
+          <in>pt.h</in>
           <in>queue.h</in>
           <in>scheduler.h</in>
           <in>sfs.h</in>
@@ -322,8 +535,10 @@
           <in>menu.c</in>
         </df>
         <df name="syscalls">
-          <in>_exit.c</in>
-          <in>write.c</in>
+          <in>fileDescriptor.c</in>
+          <in>file_syscall.c</in>
+          <in>process.c</in>
+          <in>process_syscall.c</in>
         </df>
         <df name="test">
           <in>arraytest.c</in>
@@ -348,7 +563,11 @@
           <in>uio.c</in>
         </df>
         <df name="vm">
+          <in>addrspace-carl.c</in>
           <in>addrspace.c</in>
+          <in>addrspace_Est.c</in>
+          <in>addrspace_yi.c</in>
+          <in>pt.c</in>
           <in>uw-vmstats.c</in>
         </df>
       </df>
@@ -395,6 +614,7 @@
           <in>strtok.c</in>
           <in>strtok_r.c</in>
           <in>syscalls-mips.S</in>
+          <in>syscalls.S</in>
           <in>system.c</in>
           <in>time.c</in>
         </df>
@@ -561,6 +781,7 @@
           <in>parallelvm.c</in>
         </df>
         <df name="randcall">
+          <in>calls.c</in>
           <in>extern.h</in>
           <in>main.c</in>
         </df>
@@ -600,9 +821,13 @@
           <in>triplehuge.c</in>
         </df>
         <df name="triplemat">
+          <in>triple.c</in>
+          <in>triple.h</in>
           <in>triplemat.c</in>
         </df>
         <df name="triplesort">
+          <in>triple.c</in>
+          <in>triple.h</in>
           <in>triplesort.c</in>
         </df>
         <df name="userthreads">

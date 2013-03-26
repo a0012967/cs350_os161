@@ -2,6 +2,7 @@
 #define _ADDRSPACE_H_
 
 #include <vm.h>
+#include <vm-tlb.h>
 #include <pt.h>
 #include "opt-dumbvm.h"
 #include "opt-A3.h"
@@ -43,6 +44,8 @@ struct addrspace {
     
     //struct array *pagetable;
     struct pagetable* pt; // initialize during as_create
+	
+	struct tlb *tlb;
 #endif
 };
 

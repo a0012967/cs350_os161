@@ -464,6 +464,7 @@ defoption A2
 defoption A3
    file    vm/uw-vmstats.c
    file vm/pt.c
+   file vm/vm-tlb.c
 defoption A4
 defoption A5
 
