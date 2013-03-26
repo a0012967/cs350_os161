@@ -2,8 +2,15 @@
 #define _ADDRSPACE_H_
 
 #include <vm.h>
+#include <pt.h>
 #include "opt-dumbvm.h"
+#include "opt-A3.h"
 
+#if OPT_A3
+//THIS IS PROBABLY WRONG, WILL FIX LATER
+#define N_PAGES ((USERTOP-MIPS_KUSEG)/PAGE_SIZE) // number of pages for addrspace
+
+#endif
 struct vnode;
 
 /* 
@@ -34,8 +41,8 @@ struct addrspace {
 	size_t as_npages2;
 	paddr_t as_stackpbase;
     
-    struct array *pagetable;
-        
+    //struct array *pagetable;
+    struct page* pagetable; // initialize during as_create
 #endif
 };
 

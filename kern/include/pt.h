@@ -44,7 +44,7 @@ struct page{
 
 
 
-
+struct *page pagetable_create();
 
 
 
