@@ -18,9 +18,6 @@ struct coremap{
     paddr_t paddr;
     int valid;
     int used;
-    int readable;
-    int writable;
-    int executable;
     int len; // length of the block
     // uint64_t timestamp;
     

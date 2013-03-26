@@ -13,7 +13,7 @@
 
 
 enum permission   {
-    read, write, exec, rw, re,we,rwe  
+    readable, writeable, exec, rw, re,we,rwe  
 };
 
 
@@ -27,7 +27,6 @@ enum permission   {
 struct page{
     
     vaddr_t vaddr;
-    struct addrspace *as;
     int valid;
     enum permission;
 };
@@ -35,7 +34,7 @@ struct page{
 
 
 
-struct *page pagetable_create();
+struct page* pagetable_create();
 
 
 

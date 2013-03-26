@@ -65,9 +65,7 @@ void vm_bootstrap(){
         
         coremap->paddr = firstaddr+(i*coremap_size);
         coremap->len = -1;
-        coremap->readable = -1;
-        coremap->writable = -1;
-        coremap->executable = -1;
+
         coremap++;
       
         
