@@ -42,7 +42,7 @@ struct pagetable{
 
 
 
-
+struct page* page_create();
 int pagetable_create(struct addrspace *as);
 
 int pagetable_destroy(struct addrspace *as);

@@ -28,7 +28,7 @@ void vm_bootstrap(){
     paddr_t firstaddr,lastaddr,freeaddr;
     ram_getsize(&firstaddr,&lastaddr);
 
-    coremap_size = (lastaddr-firstaddr)/PAGE_SIZE; //addr alignment, nOTE: This rounds out to a whole number
+    coremap_size = lastaddr/PAGE_SIZE; //addr alignment, nOTE: This rounds out to a whole number
     
     coremap = (struct coremap *)PADDR_TO_KVADDR(firstaddr); //sets the page array
     kprintf("coremap\n");
@@ -106,13 +106,14 @@ getppages(unsigned long npages)
     
     int i,j;
     unsigned long count_pages;
-   // kprintf("getppages: about to count coremap\n");
+   kprintf("getppages: about to count coremap\n");
     for(i = 0; i< coremap_size; i++){
         j = i - npages + 1;
-        if(coremap[i].valid && !(coremap[i].used)){
+        if(coremap[i].valid /*&& !(coremap[i].used)*/){
             
             count_pages++;
             if(count_pages == npages){
+                
             	coremap[j].len = npages;
                 break;
             }
@@ -123,7 +124,7 @@ getppages(unsigned long npages)
         
         
     }
-    
+   kprintf("countpages: %d, npages: %d\n", count_pages, npages);
     if(count_pages == npages){
        // int j;
         for(j =i - npages +1;j<coremap_size;j++){
@@ -132,7 +133,7 @@ getppages(unsigned long npages)
             
             
         }
-        
+         kprintf("countpages j=%d, i=%d\n", coremap[i-npages+1].len, i);
         return coremap[i-npages+1].paddr;
         
     }
@@ -178,7 +179,7 @@ alloc_kpages(int npages)
 	 
 	 vaddr_t va;
 	 va = PADDR_TO_KVADDR(pa);
-
+         kprintf("HERE\n");
 	 return va;
 	
     
@@ -213,12 +214,12 @@ vm_fault(int faulttype, vaddr_t faultaddress)
 	int i;
 	u_int32_t ehi, elo;
 	struct addrspace *as = curthread->t_vmspace;
-	//int spl;
+	int spl;
         
         int p_i;
 
-	//spl = splhigh();
-        lock_acquire(as->tlb->tlb_lock);
+	spl = splhigh();
+        //lock_acquire(as->tlb->tlb_lock);
 
 	faultaddress &= PAGE_FRAME;
 
@@ -265,8 +266,8 @@ vm_fault(int faulttype, vaddr_t faultaddress)
 		paddr = (faultaddress - stackbase) + as->as_stackpbase;
 	}
 	else {
-		//splx(spl);
-                lock_release(as->tlb->tlb_lock);
+		splx(spl);
+                //lock_release(as->tlb->tlb_lock);
 		return EFAULT;
 	}
 
@@ -276,16 +277,32 @@ vm_fault(int faulttype, vaddr_t faultaddress)
         p_i = faultaddress/PAGE_SIZE;
         
         if (p_i < 0)
-            panic("addrspace: invalid page table index\n");
+            panic("addrspace: invalid page table index\n"); // need exception handling
         
         struct page *pg;
+        
+        pg = as->pt->pt[p_i]; 
+        
+        if (pg == NULL)
+        {
+            pg = page_create();
+            as->pt->pt[i] = pg;
+        }
+        
+        if (!pg->valid) // page not in page table
+        {
+            pg->valid = 1;
+            pg->vaddr = faultaddress;
+            
+        }
         
 	switch (faulttype) {
 	    case VM_FAULT_READONLY:
                 
                 // we double check that the user has indeed permission to write to page
 
-                pg = as->pt->pt[p_i]; 
+                
+                
                 
                     if (pg->permission == 1) // can be written to, as set in as_defined_region
                     {
@@ -316,8 +333,8 @@ vm_fault(int faulttype, vaddr_t faultaddress)
 	    case VM_FAULT_WRITE:
 		break;
 	    default:
-		//splx(spl);
-                lock_release(as->tlb->tlb_lock);
+		splx(spl);
+                //lock_release(as->tlb->tlb_lock);
 		return EINVAL;
 	}
 
@@ -332,21 +349,21 @@ vm_fault(int faulttype, vaddr_t faultaddress)
 		elo = paddr | TLBLO_DIRTY | TLBLO_VALID;
 		DEBUG(DB_VM, "dumbvm: 0x%x -> 0x%x\n", faultaddress, paddr);
 		TLB_Write(ehi, elo, i);
-		//splx(spl);
-                lock_release(as->tlb->tlb_lock);
+		splx(spl);
+                //lock_release(as->tlb->tlb_lock);
 		return 0;
 	}
 
         // need a replacement algorithm
 	kprintf("dumbvm: Ran out of TLB entries - cannot handle page fault\n");
-	//splx(spl);
+	splx(spl);
         int victim = tlb_get_rr_victim();
         if (victim <= 0 || victim >= NUM_TLB)
             return EFAULT;
         
         TLB_Write(ehi, elo, victim);
         
-        lock_release(as->tlb->tlb_lock);
+        //lock_release(as->tlb->tlb_lock);
 	return 0;
 }
 
@@ -368,20 +385,23 @@ as_create(void)
 	}
         
 #if OPT_A3
-
-        as->pt = array_create();
+        int err;
         
-        if (as->pt == NULL)
+        kprintf("address of as %x\n",as);
+        err = pagetable_create(as);
+        //as->pt = array_create();
+        
+        if (err)
             return NULL;
         
         // create the lock for the tlb table
-        as->tlb->tlb_lock = lock_create("tlb lock");
+        //as->tlb->tlb_lock = lock_create("tlb lock");
         
-        if (as->tlb->tlb_lock == NULL)
-            panic("as_create: Cannot create tlb lock\n");
+        //if (as->tlb->tlb_lock == NULL)
+            //panic("as_create: Cannot create tlb lock\n");
         
         // initialize next victim for round robin algo
-        as->tlb->next_victim = 0;
+        //as->tlb->next_victim = 0;
         
 	as->as_vbase1 = 0;
 	as->as_pbase1 = 0;
@@ -457,8 +477,8 @@ as_destroy(struct addrspace *as)
 {
 #if OPT_A3
     
-    lock_destroy(as->tlb);
-    array_destroy(as->pt);
+    //lock_destroy(as->tlb);
+    pagetable_destroy(as);
     kfree(as);
     
 #else
@@ -474,6 +494,7 @@ void
 as_activate(struct addrspace *as)
 {
 #if OPT_A3
+    kprintf("In as activate\n");
 	/*
 	 * Write this.
 	 */
@@ -514,7 +535,7 @@ as_define_region(struct addrspace *as, vaddr_t vaddr, size_t sz,
 {
 #if OPT_A3
     size_t npages; 
-    
+    kprintf("In as define region\n");
   //  kprintf("Pageframe: %x, size %d\n",PAGE_FRAME,sz);
 	/* Align the region. First, the base... */
 	sz += vaddr & ~(vaddr_t)PAGE_FRAME;
@@ -568,7 +589,7 @@ int
 as_prepare_load(struct addrspace *as)
 {
 #if OPT_A3
-    
+    kprintf("In as prepare load\n");
     assert(as->as_pbase1 == 0);
 	assert(as->as_pbase2 == 0);
 	assert(as->as_stackpbase == 0);
@@ -603,6 +624,7 @@ int
 as_complete_load(struct addrspace *as)
 {
 #if OPT_A3
+    kprintf("In as complete load\n");
 	/*
 	 * Write this.
 	 */
@@ -619,7 +641,7 @@ as_define_stack(struct addrspace *as, vaddr_t *stackptr)
 {
 #if OPT_A3
         assert(as->as_stackpbase != 0);
-
+        kprintf("In as define stack\n");
 	*stackptr = USERSTACK;
 	return 0;
 #else
