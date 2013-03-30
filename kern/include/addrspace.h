@@ -44,6 +44,8 @@ struct addrspace {
     struct array *useg1;    //code
     struct array *useg2;    //data
     struct array *usegs;    //stack
+    
+    struct tlb *tlb;
 #endif
 };
 

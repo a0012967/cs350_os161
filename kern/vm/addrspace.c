@@ -67,7 +67,8 @@ void vm_bootstrap(){
           
         }
         
-        coremap->paddr = firstaddr+(i*coremap_size);
+        coremap->paddr = firstaddr+((i*4)*coremap_size);
+        assert((coremap->paddr & PAGE_FRAME) == coremap->paddr);
         coremap->len = -1;
 
         coremap++;
@@ -101,6 +102,7 @@ getppages(unsigned long npages)
         spl = splhigh();
         
         addr =  ram_stealmem(npages);
+        
         splx(spl);
         return addr;
         //panic("PAGE TABLE NOT INITIALIZE\N");
@@ -112,7 +114,7 @@ getppages(unsigned long npages)
    kprintf("getppages: about to count coremap\n");
     for(i = 0; i< coremap_size; i++){
         j = i - npages + 1;
-        if(coremap[i].valid /*&& !(coremap[i].used)*/){
+        if(coremap[i].valid && !(coremap[i].used)){
             
             count_pages++;
             if(count_pages == npages){
@@ -130,13 +132,14 @@ getppages(unsigned long npages)
    kprintf("countpages: %d, npages: %d\n", count_pages, npages);
     if(count_pages == npages){
        // int j;
-        for(j =i - npages +1;j<coremap_size;j++){
+        for(j =i - npages +1;j<(i+1);j++){
             
             coremap[j].used= 1;
             
             
         }
          kprintf("countpages j=%d, i=%d\n", coremap[i-npages+1].len, i);
+         assert((coremap[i-npages+1].paddr & PAGE_FRAME) == coremap[i-npages+1].paddr);
         return coremap[i-npages+1].paddr;
         
     }
@@ -259,7 +262,7 @@ vm_fault(int faulttype, vaddr_t faultaddress)
 	vtop2 = vbase2 + as->as_npages2 * PAGE_SIZE;
 	stackbase = USERSTACK - DUMBVM_STACKPAGES * PAGE_SIZE;
 	stacktop = USERSTACK;
-
+        
 	if (faultaddress >= vbase1 && faultaddress < vtop1) {
 		paddr = (faultaddress - vbase1) + as->as_pbase1;
 	}
@@ -290,15 +293,18 @@ vm_fault(int faulttype, vaddr_t faultaddress)
     if (p_i < 0)    {
         panic("addrspace: invalid page table index\n"); // need exception handling
         
-    } else if (p_i <= as->as_npages1)   { // look in code
-        pg = (struct page *)array_getguy(as->useg1, p_i);
+    } else if (faultaddress >= vbase1 && faultaddress < vtop1)   { // look in code
+        pg = (struct page *)array_getguy(as->useg1, (faultaddress-vbase1)/PAGE_SIZE);
         segment=0;
-    } else if (p_i <= (as->as_npages1 + as->as_npages2))    { // look in data
-        pg = (struct page *)array_getguy(as->useg2, (p_i - as->as_npages1));
+    } else if (faultaddress >= vbase2 && faultaddress < vtop2)    { // look in data
+        pg = (struct page *)array_getguy(as->useg2, (faultaddress-vbase2)/PAGE_SIZE);
         segment =1;
-    } else  { // look in stack
-        pg = (struct page *)array_getguy(as->usegs, (p_i - (as->as_npages1  +as->as_npages2)));
+    } else if (faultaddress >= stackbase && faultaddress < stacktop) { // look in stack
+        kprintf("size of stack %d\n", array_getnum(as->usegs));
+        pg = (struct page *)array_getguy(as->usegs, ((faultaddress - stackbase)/PAGE_SIZE));
         segment = 2;
+    } else {
+        pg = NULL;
     }
     //---
         
@@ -424,7 +430,7 @@ as_create(void)
 	 * Initialize as needed.
 	 */
 #if OPT_A3
-    as->as_page_dir = alloc_kpages(1);
+    //as->as_page_dir = alloc_kpages(1);
 	as->as_vbase1 = 0;
 	as->as_pbase1 = 0;
 	as->as_npages1 = 0;
@@ -689,16 +695,17 @@ as_prepare_load(struct addrspace *as)
 	assert(as->as_pbase2 == 0);
 	assert(as->as_stackpbase == 0);
     
+        
 	as->as_pbase1 = getppages(as->as_npages1);
 	if (as->as_pbase1 == 0) {
 		return ENOMEM;
 	}
-    
+    assert((as->as_pbase1 & PAGE_FRAME) == as->as_pbase1);
 	as->as_pbase2 = getppages(as->as_npages2);
 	if (as->as_pbase2 == 0) {
 		return ENOMEM;
 	}
-    
+        
 	as->as_stackpbase = getppages(DUMBVM_STACKPAGES);
 	if (as->as_stackpbase == 0) {
 		return ENOMEM;
