@@ -759,7 +759,7 @@ as_define_stack(struct addrspace *as, vaddr_t *stackptr)
         p->permission = 7;
         array_add(as->usegs, p);
     }
-    as->as_stackpbase = p->vaddr; //MAY BE OFF BY ONE ADDRESS!!
+    //as->as_stackpbase = p->vaddr; //MAY BE OFF BY ONE ADDRESS!!
     *stackptr = USERSTACK;
     return 0;
 #else
