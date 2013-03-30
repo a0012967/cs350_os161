@@ -34,13 +34,13 @@ void vm_bootstrap(){
     coremap_size = lastaddr/PAGE_SIZE; //addr alignment, nOTE: This rounds out to a whole number
     
     coremap = (struct coremap *)PADDR_TO_KVADDR(firstaddr); //sets the page array
-   // kprintf("coremap\n");
+
     if(coremap== NULL){
         panic("Can't create page table, no mem\n");
     }
     
     freeaddr = firstaddr + coremap_size * sizeof(struct coremap);
-    kprintf("freeaddr\n");
+    //kprintf("freeaddr\n");
     if(lastaddr-freeaddr <= 0){
         
         panic("OUT OF MEMORYn");
@@ -49,7 +49,7 @@ void vm_bootstrap(){
     //the actual init
     
     struct coremap * p = (struct coremap *) PADDR_TO_KVADDR((paddr_t)coremap);
-   // kprintf("p coremap_Size %d\n",coremap_size);
+
     entry = coremap;
     int i;
     for(i =0;i<coremap_size;i++){
@@ -81,7 +81,7 @@ void vm_bootstrap(){
 
     pt_initialize =1;
 
-  kprintf("VM BOOTSTRAP COMPLETE: page size: %d, coremap size:%d\n",PAGE_SIZE,coremap_size);
+  //kprintf("VM BOOTSTRAP COMPLETE: page size: %d, coremap size:%d\n",PAGE_SIZE,coremap_size);
     
 }
     /*
@@ -130,7 +130,7 @@ getppages(unsigned long npages)
         
         
     }
- //  kprintf("countpages: %d, npages: %d\n", count_pages, npages);
+
     if(count_pages == npages){
        // int j;
         for(j =i - npages +1;j<(i+1);j++){
@@ -139,7 +139,7 @@ getppages(unsigned long npages)
             
             
         }
-       //  kprintf("countpages j=%d, i=%d\n", coremap[i-npages+1].len, i);
+
          assert((coremap[i-npages+1].paddr & PAGE_FRAME) == coremap[i-npages+1].paddr);
         return coremap[i-npages+1].paddr;
         
@@ -186,7 +186,7 @@ alloc_kpages(int npages)
 	 
 	 vaddr_t va;
 	 va = PADDR_TO_KVADDR(pa);
-        // kprintf("HERE\n");
+
 	 return va;
 	
     
@@ -301,7 +301,6 @@ vm_fault(int faulttype, vaddr_t faultaddress)
         pg = (struct page *)array_getguy(as->useg2, (faultaddress-vbase2)/PAGE_SIZE);
         segment =1;
     } else if (faultaddress >= stackbase && faultaddress < stacktop) { // look in stack
-        kprintf("size of stack %d\n", array_getnum(as->usegs));
         pg = (struct page *)array_getguy(as->usegs, ((faultaddress - stackbase)/PAGE_SIZE));
         segment = 2;
     } else {
@@ -766,7 +765,7 @@ as_define_stack(struct addrspace *as, vaddr_t *stackptr)
         p->permission = 0x7;
         array_add(as->usegs, p);
     }
-   // as->as_stackpbase = p->vaddr; //MAY BE OFF BY ONE ADDRESS!!
+
     *stackptr = USERSTACK;
     return 0;
 #else
