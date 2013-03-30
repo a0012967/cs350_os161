@@ -8,9 +8,7 @@
 #include "opt-A3.h"
 
 #if OPT_A3
-//THIS IS PROBABLY WRONG, WILL FIX LATER
-#define N_PAGES ((USERTOP-MIPS_KUSEG)/PAGE_SIZE) // number of pages for addrspace
-
+//#include <array.h>
 #endif
 struct vnode;
 
@@ -42,10 +40,10 @@ struct addrspace {
 	size_t as_npages2;
 	paddr_t as_stackpbase;
     
-    //struct array *pagetable;
-    struct pagetable* pt; // initialize during as_create
-	
-	struct tlb *tlb;
+    
+    struct array *useg1;    //code
+    struct array *useg2;    //data
+    struct array *usegs;    //stack
 #endif
 };
 

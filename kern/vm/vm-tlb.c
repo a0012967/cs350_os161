@@ -11,6 +11,7 @@
 #include "opt-A3.h"
 
 #if OPT_A3
+
 int tlb_get_rr_victim(void)
 {
     int victim;

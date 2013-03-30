@@ -100,11 +100,11 @@ as_create(void)
 	as->as_npages2 = 0;
 	as->as_stackpbase = 0;
     
-    //initialize pagetable for as
-    int result = pagetable_create(as);
-    if (result != 0) {
-        //there was an error, do something here?
-    }
+    //initialize pagetable for addrspace
+    as->useg1 = array_create();
+    as->useg2 = array_create();
+    as->usegs = array_create();
+    
 #endif
 
 	return as;
@@ -133,14 +133,9 @@ as_copy(struct addrspace *old, struct addrspace **ret)
 void
 as_destroy(struct addrspace *as)
 {
-	/*
-	 * Clean up as needed.
-	 */
-	int result = pagetable_destroy(as);
-    
-    if (result != 0)    {
-        //pagetable wasn't destroyed properly, do something about it?
-    }
+	array_destroy(as->useg1);
+    array_destroy(as->useg2);
+    array_destroy(as->usegs);
 	kfree(as);
 }
 
@@ -154,6 +149,39 @@ as_activate(struct addrspace *as)
 	(void)as;  // suppress warning until code gets written
 }
 
+
+//helper function to determine page's permission
+int as_set_permission(int r, int w, int e)  {
+    if (r == 0) {
+        if (w == 0) {
+            if (e == 0) {
+                return 0; //000
+            } else {// e = 1
+                return 3;   //001
+            }
+        } else { // w = 1
+            if (e == 0) {
+                return 2; //010
+            } else {// e = 1
+                return 6; //011
+            }
+        }
+    } else {//r = 1
+        if (w == 0) {
+            if (e == 0) {
+                return 1; //100
+            } else {// e = 1
+                return 5; //101
+            }
+        } else { // w = 1
+            if (e == 0) {
+                return 4; //110
+            } else {// e = 1
+                return 7; //111
+            }
+        }
+    }
+}
 /*
  * Set up a segment at virtual address VADDR of size MEMSIZE. The
  * segment in memory extends from VADDR up to (but not including)
@@ -184,32 +212,35 @@ as_define_region(struct addrspace *as, vaddr_t vaddr, size_t sz,
     npages = sz / PAGE_SIZE;
     
     
-    int i;
-    struct page *p;
     
-    for (i = 0; i < npages; i++)    {
-        p=kmalloc(sizeof(struct page));
-        p->vaddr = vaddr + i * PAGE_SIZE;
-                        //is this offset right? PAGE_SIZE = 4096 
-        p->state = free
-            // i think we should rename stat to valid, b/c it's called the valid bit.
-        //p->permission = readable | writeable | executable
-        
-        //I need to add an array of these pages to the addrspace. we need add something in the addrspace struct like as->listofpages field so I can do something like  as->listofpages[i]=p or array_add(as->listofpages, p)
-    }
-    
-    //don't use these - all pages are read-write
-    (void)readable;
-	(void)writeable;
-	(void)executable;
-    
-    if (as->as_vbase1 == 0) {
+    if (as->as_vbase1 == 0) { // code segment useg1
         as->as_vbase1 = vaddr;
         as ->as_npages1 = npages;
+        
+        int i;
+        struct page *p;
+        
+        for (i = 0; i < npages; i++)    {
+            p = kmalloc(sizeof(struct page));
+            p->vaddr = vaddr + i * PAGE_SIZE;
+            p->permission = as_set_permission(readable,writeable,executable);
+            array_add(as->useg1, p);
+        }
         return 0;
-    } else if (as->as_vbase2 == 0) {
+    } else if (as->as_vbase2 == 0) { // data segment useg2
         as->as_vbase2 = vaddr;
         as ->as_npages2 = npages;
+        
+        int i;
+        struct page *p;
+        
+        for (i = 0; i < npages; i++)    {
+            p = kmalloc(sizeof(struct page));
+            p->vaddr = vaddr + i * PAGE_SIZE;
+            p->permission = as_set_permission(readable,writeable,executable);
+            array_add(as->useg2, p);
+        }
+        
         return 0;
     }
     kprintf("addrspace.c: Warning: too many regions\n");
@@ -277,6 +308,8 @@ as_complete_load(struct addrspace *as)
     
 #if OPT_A3
     //don't know yet!!!
+    (void)as;
+	return 0;
 #else
 	(void)as;
 	return 0;
@@ -296,14 +329,16 @@ as_define_stack(struct addrspace *as, vaddr_t *stackptr)
     
     for (i=0; i < DUMBVM_STACKPAGES; i++)   {
                     //does DUMBVM_STACKPAGES still work? what else can we use? xD using the one in pt.c right now
-        p=kmalloc(sizeof(struct pte));
-        p->vaddr_t = USERSTACK - i * PAGE_SIZE;
+        p=kmalloc(sizeof(struct page));
+        p->vaddr = USERSTACK - i * PAGE_SIZE;//since we are going backwards
                                 
-        e->state = free;
-        //both of following is similar to define_region
-        //need e->permission 
-        //need to add to pages of address space
+        p->valid =0;
+        // ???? p->permission = 
+        array_add(as->usegs, p);
     }
+    as->as_stackpbase = p->vaddr; //MAY BE OFF BY ONE ADDRESS!!
+    *stackptr = USERSTACK;
+    return 0;
 #else
 	(void)as;
     

@@ -29,6 +29,7 @@ enum permission   {
 struct page{
     
     vaddr_t vaddr;
+    paddr_t paddr;
     int valid;
     enum permission permission;
 };
@@ -36,16 +37,6 @@ struct page{
 
 
 
-struct pagetable{
-    struct page *pt[N_PAGES];
-};
-
-
-
-struct page* page_create();
-int pagetable_create(struct addrspace *as);
-
-int pagetable_destroy(struct addrspace *as);
 #endif 
 
 
