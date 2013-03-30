@@ -263,6 +263,8 @@ vm_fault(int faulttype, vaddr_t faultaddress)
 	stackbase = USERSTACK - DUMBVM_STACKPAGES * PAGE_SIZE;
 	stacktop = USERSTACK;
         
+    /* 
+        // YI: THIS SECTION IS WRONG!!!: paddr may have use=0
 	if (faultaddress >= vbase1 && faultaddress < vtop1) {
 		paddr = (faultaddress - vbase1) + as->as_pbase1;
 	}
@@ -277,7 +279,8 @@ vm_fault(int faulttype, vaddr_t faultaddress)
                 //lock_release(as->tlb->tlb_lock);
 		return EFAULT;
 	}
-
+     */
+    
 	/* make sure it's page-aligned */
 	assert((paddr & PAGE_FRAME)==paddr);
         
@@ -304,10 +307,12 @@ vm_fault(int faulttype, vaddr_t faultaddress)
         pg = (struct page *)array_getguy(as->usegs, ((faultaddress - stackbase)/PAGE_SIZE));
         segment = 2;
     } else {
-        pg = NULL;
+        panic("addrspace: faultaddress not valid!!\n");
     }
     //---
         
+    
+    
         if (pg == NULL)
         {
             //create page
@@ -316,22 +321,27 @@ vm_fault(int faulttype, vaddr_t faultaddress)
             pg->paddr = paddr;
             pg->valid = 1;
             if (segment == 0)   {
-                pg->permission = 5;
+                pg->permission = 0x5;
             } else if (segment == 1)    {
-                pg->permission = 6;
+                pg->permission = 0x6;
             } else {
-                pg->permission = 7;
+                pg->permission = 0x7;
             }
                 
             //as->pt->pt[i] = pg; //don't need this line, done in line 293
         }
+    
         
         if (!pg->valid) // page not in page table
         {
+            paddr = getppages(1);
+            if (paddr == NULL)  {
+                return ENOMEM;
+            }
+            pg->paddr = paddr;
             pg->valid = 1;
             pg->vaddr = faultaddress;
-            
-        }
+        } // may need else case for tlb reload
         
 	switch (faulttype) {
 	    case VM_FAULT_READONLY:
@@ -759,7 +769,7 @@ as_define_stack(struct addrspace *as, vaddr_t *stackptr)
         p->permission = 7;
         array_add(as->usegs, p);
     }
-    as->as_stackpbase = p->vaddr; //MAY BE OFF BY ONE ADDRESS!!
+    //as->as_stackpbase = p->vaddr; //MAY BE OFF BY ONE ADDRESS!!
     *stackptr = USERSTACK;
     return 0;
 #else
