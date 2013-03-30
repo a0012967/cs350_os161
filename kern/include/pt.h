@@ -31,7 +31,7 @@ struct page{
     vaddr_t vaddr;
     paddr_t paddr;
     int valid;
-    enum permission permission;
+    int permission;
 };
 
 

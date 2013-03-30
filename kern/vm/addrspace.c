@@ -34,7 +34,7 @@ void vm_bootstrap(){
     coremap_size = lastaddr/PAGE_SIZE; //addr alignment, nOTE: This rounds out to a whole number
     
     coremap = (struct coremap *)PADDR_TO_KVADDR(firstaddr); //sets the page array
-    kprintf("coremap\n");
+   // kprintf("coremap\n");
     if(coremap== NULL){
         panic("Can't create page table, no mem\n");
     }
@@ -49,7 +49,7 @@ void vm_bootstrap(){
     //the actual init
     
     struct coremap * p = (struct coremap *) PADDR_TO_KVADDR((paddr_t)coremap);
-    kprintf("p coremap_Size %d\n",coremap_size);
+   // kprintf("p coremap_Size %d\n",coremap_size);
     entry = coremap;
     int i;
     for(i =0;i<coremap_size;i++){
@@ -67,8 +67,9 @@ void vm_bootstrap(){
           
         }
         
-        coremap->paddr = firstaddr+((i*4)*coremap_size);
-        assert((coremap->paddr & PAGE_FRAME) == coremap->paddr);
+        coremap->paddr = firstaddr+(i*PAGE_SIZE);
+       // kprintf("coremap: paddr %p  PAGE_FRAME: %p, bitwise and: %p\n",(void *) coremap->paddr,(void *)PAGE_FRAME, (void *)(coremap->paddr & PAGE_FRAME));
+        assert((coremap->paddr & PAGE_FRAME) == coremap->paddr); //checks if the paddr is in the frame
         coremap->len = -1;
 
         coremap++;
@@ -111,10 +112,10 @@ getppages(unsigned long npages)
     
     int i,j;
     unsigned long count_pages;
-   kprintf("getppages: about to count coremap\n");
+   //kprintf("getppages: about to count coremap\n");
     for(i = 0; i< coremap_size; i++){
         j = i - npages + 1;
-        if(coremap[i].valid && !(coremap[i].used)){
+        if(!(coremap[i].used)){
             
             count_pages++;
             if(count_pages == npages){
@@ -129,7 +130,7 @@ getppages(unsigned long npages)
         
         
     }
-   kprintf("countpages: %d, npages: %d\n", count_pages, npages);
+ //  kprintf("countpages: %d, npages: %d\n", count_pages, npages);
     if(count_pages == npages){
        // int j;
         for(j =i - npages +1;j<(i+1);j++){
@@ -138,7 +139,7 @@ getppages(unsigned long npages)
             
             
         }
-         kprintf("countpages j=%d, i=%d\n", coremap[i-npages+1].len, i);
+       //  kprintf("countpages j=%d, i=%d\n", coremap[i-npages+1].len, i);
          assert((coremap[i-npages+1].paddr & PAGE_FRAME) == coremap[i-npages+1].paddr);
         return coremap[i-npages+1].paddr;
         
@@ -185,7 +186,7 @@ alloc_kpages(int npages)
 	 
 	 vaddr_t va;
 	 va = PADDR_TO_KVADDR(pa);
-         kprintf("HERE\n");
+        // kprintf("HERE\n");
 	 return va;
 	
     
@@ -316,11 +317,11 @@ vm_fault(int faulttype, vaddr_t faultaddress)
             pg->paddr = paddr;
             pg->valid = 1;
             if (segment == 0)   {
-                pg->permission = 5;
+                pg->permission = 0x5;
             } else if (segment == 1)    {
-                pg->permission = 6;
+                pg->permission = 0x6;
             } else {
-                pg->permission = 7;
+                pg->permission = 0x7;
             }
                 
             //as->pt->pt[i] = pg; //don't need this line, done in line 293
@@ -335,32 +336,32 @@ vm_fault(int faulttype, vaddr_t faultaddress)
         
 	switch (faulttype) {
 	    case VM_FAULT_READONLY:
+            
+            // we double check that the user has indeed permission to write to page
+            
+            
+            
+            
+            if (pg->permission == 0x1) // can be written to, as set in as_defined_region
+            {
+                int tlb_entry = TLB_Probe(faultaddress, 0);
                 
-                // we double check that the user has indeed permission to write to page
-
+                TLB_Read(&ehi, &elo, tlb_entry);
                 
+                if (ehi != faultaddress)
+                    panic("vm_fault: ehi not equal to faultaddr\n");
                 
+                elo = paddr | TLBLO_DIRTY | TLBLO_VALID;
                 
-                    if (pg->permission == 1) // can be written to, as set in as_defined_region
-                    {
-                        int tlb_entry = TLB_Probe(faultaddress, 0);
-                        
-                        TLB_Read(&ehi, &elo, tlb_entry);
-                        
-                        if (ehi != faultaddress)
-                            panic("vm_fault: ehi not equal to faultaddr\n");
-                        
-                        elo = paddr | TLBLO_DIRTY | TLBLO_VALID;
-                        
-                        TLB_Write(ehi, elo, tlb_entry);
-                        
-                        break;
-                    }
-                    else
-                    {
-                        int retval; // useless for now
-                        _exit(0, &retval);   
-                    }
+                TLB_Write(ehi, elo, tlb_entry);
+                
+                break;
+            }
+            else
+            {
+                int retval; // useless for now
+                _exit(0, &retval);   
+            }
                 
 		/* We always create pages read-write, so we can't get this */
 		//panic("dumbvm: got VM_FAULT_READONLY\n");
@@ -388,20 +389,22 @@ vm_fault(int faulttype, vaddr_t faultaddress)
 		DEBUG(DB_VM, "dumbvm: 0x%x -> 0x%x\n", faultaddress, paddr);
 		TLB_Write(ehi, elo, i);
 		splx(spl);
-                //lock_release(as->tlb->tlb_lock);
+        //lock_release(as->tlb->tlb_lock);
 		return 0;
 	}
-
-        // need a replacement algorithm
+    
+    // need a replacement algorithm
+    kprintf("lol");
 	kprintf("dumbvm: Ran out of TLB entries - cannot handle page fault\n");
-	splx(spl);
-        int victim = tlb_get_rr_victim();
-        if (victim <= 0 || victim >= NUM_TLB)
-            return EFAULT;
-        
-        TLB_Write(ehi, elo, victim);
-        
-        //lock_release(as->tlb->tlb_lock);
+	//splx(spl);
+    int victim = tlb_get_rr_victim();
+    kprintf("vm fault: got our victim, %d \n",victim);
+    if (victim <= 0 || victim >= NUM_TLB)
+        return EFAULT;
+    
+    TLB_Write(ehi, elo, victim);
+    splx(spl);
+    //lock_release(as->tlb->tlb_lock);
 	return 0;
 }
 
@@ -443,6 +446,8 @@ as_create(void)
     as->useg1 = array_create();
     as->useg2 = array_create();
     as->usegs = array_create();
+    as->tlb = kmalloc(sizeof(struct tlb));
+    as->tlb->next_victim = 0;
     
 #endif
     
@@ -482,7 +487,7 @@ as_copy(struct addrspace *old, struct addrspace **ret)
         e->vaddr = new->as_vbase1 + i * PAGE_SIZE;
         e->paddr = new->as_pbase1 + i + PAGE_SIZE;
         e->valid = 1;
-        e->permission = 5; //re
+        e->permission = 0x5; //re
         array_add(new->useg1, e);
     }
 	memmove((void *)PADDR_TO_KVADDR(new->as_pbase1),
@@ -495,7 +500,7 @@ as_copy(struct addrspace *old, struct addrspace **ret)
         e->vaddr = new->as_vbase2 + i * PAGE_SIZE;
         e->paddr = new->as_pbase2 + i + PAGE_SIZE;
         e->valid = 1;
-        e->permission = 6; //rw
+        e->permission = 0x6; //rw
         array_add(new->useg2, e);
     }
 	memmove((void *)PADDR_TO_KVADDR(new->as_pbase2),
@@ -507,7 +512,7 @@ as_copy(struct addrspace *old, struct addrspace **ret)
         e->vaddr = USERSTACK - i * PAGE_SIZE;
         e->paddr = new->as_stackpbase + i + PAGE_SIZE;
         e->valid = 1;
-        e->permission = 7; //rwe
+        e->permission = 0x7; //rwe
         array_add(new->usegs, e);
     }
     
@@ -577,7 +582,7 @@ as_activate(struct addrspace *as)
 
 //helper function for as_define_region -  to determine page's permission
 int as_set_permission(int r, int w, int e)  {
-    if (r == 0) {
+    /*if (r == 0) {
         if (w == 0) {
             if (e == 0) {
                 return 0; //000
@@ -605,7 +610,9 @@ int as_set_permission(int r, int w, int e)  {
                 return 7; //111
             }
         }
-    }
+    }*/
+    
+    return r|w|e;
 }
 /*
  * Set up a segment at virtual address VADDR of size MEMSIZE. The
@@ -756,10 +763,10 @@ as_define_stack(struct addrspace *as, vaddr_t *stackptr)
         p->vaddr = USERSTACK - i * PAGE_SIZE;//since we are going backwards
         
         p->valid =0;
-        p->permission = 7;
+        p->permission = 0x7;
         array_add(as->usegs, p);
     }
-    as->as_stackpbase = p->vaddr; //MAY BE OFF BY ONE ADDRESS!!
+   // as->as_stackpbase = p->vaddr; //MAY BE OFF BY ONE ADDRESS!!
     *stackptr = USERSTACK;
     return 0;
 #else
