@@ -24,6 +24,9 @@
 
 void vm_bootstrap(){
     
+    core_lock = lock_create("coremap-lock");
+    
+    
     struct coremap *entry; //at the end should point to the same memory as pagetable in pt.h
     coremap_size =0;
     //allocating memory
@@ -55,18 +58,18 @@ void vm_bootstrap(){
     for(i =0;i<coremap_size;i++){
         
         if(i<((freeaddr-firstaddr)/PAGE_SIZE)){
-            coremap->valid = 0;
+            
             coremap->used = 1;
             
         }
         else{
             
-            coremap->valid = 1;
+            
             coremap->used =0;
             
             
         }
-        
+        coremap->pid = -1;
         coremap->paddr = firstaddr+(i*PAGE_SIZE);
         // kprintf("coremap: paddr %p  PAGE_FRAME: %p, bitwise and: %p\n",(void *) coremap->paddr,(void *)PAGE_FRAME, (void *)(coremap->paddr & PAGE_FRAME));
         assert((coremap->paddr & PAGE_FRAME) == coremap->paddr); //checks if the paddr is in the frame
@@ -109,7 +112,7 @@ getppages(unsigned long npages)
         //panic("PAGE TABLE NOT INITIALIZE\N");
         
     }
-    
+    lock_acquire(core_lock);
     int i,j;
     unsigned long count_pages;
     //kprintf("getppages: about to count coremap\n");
@@ -121,6 +124,9 @@ getppages(unsigned long npages)
             if(count_pages == npages){
                 
             	coremap[j].len = npages;
+                // assert(curthread != NULL);
+                // assert(curthread->t_process != NULL);
+                // coremap[j].pid = curthread->t_process->PID;
                 break;
             }
         }
@@ -134,17 +140,20 @@ getppages(unsigned long npages)
     if(count_pages == npages){
         // int j;
         for(j =i - npages +1;j<(i+1);j++){
-            
+            //coremap[j].pid = curthread->t_process->PID;
             coremap[j].used= 1;
             
             
         }
+
+        assert((coremap[i-npages+1].paddr & PAGE_FRAME) == coremap[i-npages+1].paddr);//make sure the address is in the frame
         
-        assert((coremap[i-npages+1].paddr & PAGE_FRAME) == coremap[i-npages+1].paddr);
+        lock_release(core_lock);
+
         return coremap[i-npages+1].paddr;
         
     }
-    
+    lock_release(core_lock);
     return 0; //if not successful
     
     
@@ -166,13 +175,29 @@ getppages(unsigned long npages)
     
 }
 
-
+void coremap_insertpid(paddr_t pa,pid_t pid){
+    int i;
+    for(i=0;i<coremap_size;i++){
+        
+        if(coremap[i].paddr == pa){
+            break;
+            
+        }
+        
+    }
+    
+    int len = coremap[i].len;
+    coremap[i].pid = pid;
+    
+}
 
 vaddr_t 
 alloc_kpages(int npages)
 {
     
-    
+
+    //kprintf("call to alloc_kpages: npages: %d\n",npages);
+
     //virtually no change, only the implementation of getppages
 	paddr_t pa;
 	pa = getppages(npages);
@@ -184,9 +209,20 @@ alloc_kpages(int npages)
 	}
     
     
+
+
     vaddr_t va;
     va = PADDR_TO_KVADDR(pa);
     
+    if(!(va > USERTOP)){
+        assert(curthread!=NULL);
+        assert(curthread->t_process != NULL);
+        coremap_insertpid(pa,curthread->t_process->PID);
+    }
+    // kprintf("alloc address: %p, npages: %d\n",va,npages);
+    
+    
+
     return va;
 	
     
@@ -196,21 +232,102 @@ alloc_kpages(int npages)
 void 
 free_kpages(vaddr_t addr)
 {
+    lock_acquire(core_lock);
+    // kprintf("trying to free: %p\n",addr);
     int i =0;
-    while(PADDR_TO_KVADDR(coremap[i].paddr) != addr){
+    //kprintf("paddr: %p\n", PADDR_TO_KVADDR(coremap[i].paddr));
+    //kprintf("1\n");
+    
+    if(!(addr>USERTOP)){
+       // kprintf("this case: %d\n",curthread->t_process->PID);
+        for(i = 0; i< coremap_size;i++){
+            
+            assert(curthread != NULL);
+            assert(curthread->t_process != NULL);
+            if(PADDR_TO_KVADDR(coremap[i].paddr) == addr && coremap[i].pid == curthread->t_process->PID){
+                
+                //i++;
+                //kprintf("Found the vaddr: at i: %d\n",i);
+                break;
+            }
+        }
+    }
+    else{
         
-        i++;
+        for(i = 0; i< coremap_size;i++){
+            
+            
+            if(PADDR_TO_KVADDR(coremap[i].paddr) == addr){
+                
+                //i++;
+                //kprintf("Found the vaddr: at i: %d\n",i);
+                break;
+            }
+        }
+    }
+    
+    if(i >= coremap_size){
+        
+        panic("Couldn't find paddr matching vaddr needing to free\n");
         
     }
+    
+    
+    
+    /*
+     while(PADDR_TO_KVADDR(coremap[i].paddr) != addr){
+     kprintf("paddr: %p i: %d\n", PADDR_TO_KVADDR(coremap[i].paddr),i);
+     //kprintf("1\n");
+     i++;
+     
+     
+     
+     }*/
+    
+    
+    
+    /*
+     if(val )
+     int j;
+     for(j = 0; j<coremap_size;j++){
+     
+     kprintf("j: %d paddr: %p, used: %d, len: %d \n",j,coremap[j].paddr,coremap[j].used,coremap[j].len);
+     
+     }*/
+    
+    
+    
+    
+    //kprintf("i is: %d, len is %d, paddr is %p\n",i,coremap[i].len,PADDR_TO_KVADDR(coremap[i].paddr));
+    
     assert(coremap[i].len != -1);
     
     int len =coremap[i].len;
     
     coremap[i].len = -1;
-    
-    for(i = 0; i < len;i++){
-        coremap[i].used = 0;
+    int z;
+    for(z = 0; z < len;z++){
+        //coremap[z+i].pid = -1;
+        coremap[z+i].used = 0;
     }
+    // kprintf("finished freeing \n");
+    /*
+     if(i == 10){
+     
+     int j = 0;
+     kprintf("---------------------\n");
+     for(j =0;j<20;j++){
+     
+     
+     kprintf("j: %d, paddr: %p , used: %d, len: %d\n",j,coremap[j].paddr,coremap[j].used,coremap[j].len);
+     
+     
+     }
+     
+     
+     }
+     */
+    lock_release(core_lock);
 }
 
 int
@@ -393,14 +510,16 @@ vm_fault(int faulttype, vaddr_t faultaddress)
 	}
     
     // need a replacement algorithm
-    kprintf("lol");
-	kprintf("dumbvm: Ran out of TLB entries - cannot handle page fault\n");
+    //kprintf("lol");
+	//kprintf("dumbvm: Ran out of TLB entries - cannot handle page fault\n");
 	//splx(spl);
-    int victim = tlb_get_rr_victim();
-    kprintf("vm fault: got our victim, %d \n",victim);
-    if (victim <= 0 || victim >= NUM_TLB)
-        return EFAULT;
     
+    int victim = tlb_get_rr_victim();
+    //kprintf("vm fault: got our victim through tlb_Get, %d \n",victim);
+    if (victim < 0 || victim >= NUM_TLB)
+        return EFAULT;
+    ehi = faultaddress;
+    elo = paddr | TLBLO_DIRTY | TLBLO_VALID;
     TLB_Write(ehi, elo, victim);
     splx(spl);
     //lock_release(as->tlb->tlb_lock);

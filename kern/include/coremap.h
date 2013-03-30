@@ -16,19 +16,30 @@ struct coremap{
     //struct addrspace* as;
     //vaddr_t vaddr;
     paddr_t paddr;
-    int valid;
+    //int valid;
     int used;
     int len; // length of the block
+    pid_t pid;
     // uint64_t timestamp;
     
 };
 
-struct lock* table_lock; // a lock to protect the page table
+struct lock* core_lock; // a lock to protect the page table
 
 
-int coremap_size;
-int pt_initialize;
+static int coremap_size;
+static int pt_initialize = 0;
 
-struct coremap* coremap;
+static struct coremap* coremap;
+
+/*
+ 
+ Swap stuff
+ 
+ */
+struct vnode *vswap;
+static struct coremap* swap_coremap;
+static int swap_init = 0;
+static int swap_coresize;
 
 #endif
