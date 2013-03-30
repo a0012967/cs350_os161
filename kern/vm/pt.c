@@ -27,7 +27,7 @@
 #define DUMBVM_STACKPAGES    12
 
 #if OPT_A3
-
+/*
 struct page* page_create()
 {kprintf("Creating pages...\n");
     struct page* p = kmalloc(sizeof(struct page));
@@ -43,7 +43,7 @@ struct page* page_create()
     
     return p;
 }
-/*
+
 int pagetable_create(struct addrspace *as){ // as = the addrspace that this pt will be attached to
     kprintf("SIZE OF %d\n",sizeof(struct pagetable));
     struct pagetable *table = kmalloc(sizeof(struct pagetable));
@@ -68,8 +68,8 @@ int pagetable_create(struct addrspace *as){ // as = the addrspace that this pt w
     return 0;
 }
 
-*/
-/*
+
+
 int pagetable_destroy(struct addrspace *as)     { // destroy the pagetable of the addrspace as
     if (as == NULL) {
         return EAGAIN;
@@ -87,6 +87,6 @@ int pagetable_destroy(struct addrspace *as)     { // destroy the pagetable of th
     kfree(as->pt);
     return 0;
 }
-
 */
+
 #endif
