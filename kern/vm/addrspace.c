@@ -22,6 +22,22 @@
 /* under dumbvm, always have 48k of user stack */
 #define DUMBVM_STACKPAGES    12
 
+   /*
+    * note:
+    * permissions as set in elf.h:
+    * readable = 0x4
+    * writable = 0x2
+    * executable = 0x1
+    * 
+    */
+
+#define R_ONLY 0x4
+#define W_ONLY 0x2
+#define E_ONLY 0x1
+#define RW_ONLY 0x6
+#define RE_ONLY 0x5
+#define WE_ONLY 0x3
+#define RWE 0x7
 
 void vm_bootstrap(){
     
@@ -423,93 +439,92 @@ vm_fault(int faulttype, vaddr_t faultaddress)
     } else if (faultaddress >= stackbase && faultaddress < stacktop) { // look in stack
         pg = (struct page *)array_getguy(as->usegs, ((faultaddress - stackbase)/PAGE_SIZE));
         segment = 2;
-    } else {
-        pg = NULL;
     }
-    //---
-        
-        if (pg == NULL)
-        {
-            //create page
-            pg = kmalloc(sizeof(struct page));
-            pg->vaddr = faultaddress;
-            pg->paddr = paddr;
-            pg->valid = 1;
-            if (segment == 0)   {
-                pg->permission = 0x5;
-            } else if (segment == 1)    {
-                pg->permission = 0x6;
-            } else {
-                pg->permission = 0x7;
-            }
-                
-            //as->pt->pt[i] = pg; //don't need this line, done in line 293
-            
-            _vmstats_inc(VMSTAT_PAGE_FAULT_DISK); /* STATS */
-        }
     
+    //---
+    int wr_to = 0;
+
+    //kprintf("Fault %d, Permission %x, Addr %x\n", faulttype,pg->permission,faultaddress );
 	switch (faulttype) {
 	    case VM_FAULT_READONLY:
-            
-            // we double check that the user has indeed permission to write to page
+                
+                // we double check that the user has indeed permission to write to page
+                if (pg->permission == W_ONLY || pg->permission == RW_ONLY ||
+                        pg->permission == WE_ONLY || pg->permission == RWE) // can be written to, as set in as_defined_region
+                {
+                    int tlb_entry = TLB_Probe(faultaddress, 0);
 
-            if (pg->permission == 0x1) // can be written to, as set in as_defined_region
-            {
-                int tlb_entry = TLB_Probe(faultaddress, 0);
-                
-                TLB_Read(&ehi, &elo, tlb_entry);
-                
-                if (ehi != faultaddress)
-                    panic("vm_fault: ehi not equal to faultaddr\n");
-                
-                elo = paddr | TLBLO_DIRTY | TLBLO_VALID;
-                
-                TLB_Write(ehi, elo, tlb_entry);
-                
-                break;
-            }
-            else
-            {
-                splx(spl);
-                int err; // useless for now
-                err = EFAULT;
-                _exit(0, &err);   
-            }
+                    TLB_Read(&ehi, &elo, tlb_entry);
+
+                    if (ehi != faultaddress)
+                        panic("vm_fault: ehi not equal to faultaddr\n");
+
+                    elo = pg->paddr | TLBLO_DIRTY | TLBLO_VALID;
+
+                    TLB_Write(ehi, elo, tlb_entry);
+
+                    wr_to = 1;
+                    break;
+                }
+                else
+                {
+                    splx(spl);
+                     //lock_release(as->tlb->tlb_lock);
+                    int err; // useless for now
+                    err = EFAULT;
+                    _exit(0, &err);   
+                }
                 
 		/* We always create pages read-write, so we can't get this */
-		//panic("dumbvm: got VM_FAULT_READONLY\n");
 	    case VM_FAULT_READ: // need to add a new page
                 if (!pg->valid)
                 {
                     pg->valid = 1;
                     pg->vaddr = faultaddress;
-
+                    paddr = getppages(1);
+                    if (paddr == NULL)
+                    {
+                        //lock_release(as->tlb->tlb_lock);
+                        return ENOMEM;
+                    }
+                    pg->paddr = paddr;
+                        
                     _vmstats_inc(VMSTAT_PAGE_FAULT_ZERO); /* STATS */
                 }
                 else
                 {
+                    paddr = pg->paddr;
                     _vmstats_inc(VMSTAT_TLB_RELOAD); /* STATS */
                 }
             break;
             
 	    case VM_FAULT_WRITE:
-                
-                if (pg->permission == 0x1) {
-                    splx(spl);
+                /*
+                if (pg->permission == R_ONLY || pg->permission == RE_ONLY) {
+                    splx(spl);kprintf("data2 %x\n",pg->permission);
                     int err; // useless for now
                     err = EFAULT;
                     _exit(0, &err);  
-                }
+                }*/
                 
                 if (!pg->valid)
                 {
                     pg->valid = 1;
                     pg->vaddr = faultaddress;
+                    paddr = getppages(1);
+                    if (paddr == NULL)
+                    {
+                        lock_release(as->tlb->tlb_lock);
+                        return ENOMEM;
+                    }
+                    pg->paddr = paddr;
+
 
                     _vmstats_inc(VMSTAT_PAGE_FAULT_ZERO); /* STATS */
                 }
                 else
                 {
+                    paddr = pg->paddr;
                     _vmstats_inc(VMSTAT_TLB_RELOAD); /* STATS */
                 }
 		break;
@@ -521,39 +536,60 @@ vm_fault(int faulttype, vaddr_t faultaddress)
 
 	_vmstats_inc(VMSTAT_TLB_FAULT);
 
-	for (i=0; i<NUM_TLB; i++) {
-		TLB_Read(&ehi, &elo, i);
-		if (elo & TLBLO_VALID) {
-			continue;
-		}
-		ehi = faultaddress;
-		elo = paddr | TLBLO_DIRTY | TLBLO_VALID;
-		DEBUG(DB_VM, "dumbvm: 0x%x -> 0x%x\n", faultaddress, paddr);
-		TLB_Write(ehi, elo, i);
-		splx(spl);
-        //lock_release(as->tlb->tlb_lock);
-                
-                vmstats_inc(VMSTAT_TLB_FAULT_FREE); /* STATS */
-		return 0;
-	}
-    
-    // need a replacement algorithm
-	//kprintf("dumbvm: Ran out of TLB entries - cannot handle page fault\n");
-	//splx(spl);
-    int victim = tlb_get_rr_victim();
-    //kprintf("vm fault: got our victim, %d \n",victim);
-    if (victim < 0 || victim >= NUM_TLB)
-        return EFAULT;
-    
-    ehi = faultaddress;
-    elo = paddr | TLBLO_DIRTY | TLBLO_VALID;
-    
-    TLB_Write(ehi, elo, victim);
-    splx(spl);
-    
-    vmstats_inc(VMSTAT_TLB_FAULT_REPLACE); /* STATS */
-    //lock_release(as->tlb->tlb_lock);
-	return 0;
+        if (!wr_to) {
+            for (i=0; i<NUM_TLB; i++) {
+                    TLB_Read(&ehi, &elo, i);
+                    if (elo & TLBLO_VALID) {
+                            continue;
+                    }
+                    ehi = faultaddress;
+
+                    //if (faultaddress >= vbase1 && faultaddress < vtop1){
+                         //elo = paddr | TLBLO_VALID;
+                    //}else{
+                        elo = paddr | TLBLO_DIRTY | TLBLO_VALID;
+                    //}
+
+                    DEBUG(DB_VM, "dumbvm: 0x%x -> 0x%x\n", faultaddress, paddr);
+                    TLB_Write(ehi, elo, i);
+                    splx(spl);
+            //lock_release(as->tlb->tlb_lock);
+
+                    vmstats_inc(VMSTAT_TLB_FAULT_FREE); /* STATS */
+                    return 0;
+            }
+
+        // need a replacement algorithm
+            //kprintf("dumbvm: Ran out of TLB entries - cannot handle page fault\n");
+            splx(spl);
+            int victim = tlb_get_rr_victim();
+            //kprintf("vm fault: got our victim, %d \n",victim);
+            if (victim < 0 || victim >= NUM_TLB)
+            {
+                 //lock_release(as->tlb->tlb_lock);
+                return EFAULT;
+            }
+
+            ehi = faultaddress;
+            //if (faultaddress >= vbase1 && faultaddress < vtop1){
+                //elo = paddr | TLBLO_VALID;
+           //}else{
+               elo = paddr | TLBLO_DIRTY | TLBLO_VALID;
+           //}
+
+            TLB_Write(ehi, elo, victim);
+            splx(spl);
+
+            vmstats_inc(VMSTAT_TLB_FAULT_REPLACE); /* STATS */
+            //lock_release(as->tlb->tlb_lock);
+                return 0;
+        }
+        else{
+             //lock_release(as->tlb->tlb_lock);
+            splx(spl);
+            vmstats_inc(VMSTAT_TLB_FAULT_REPLACE); /* STATS */
+            return 0;
+        }
 }
 
 
@@ -594,7 +630,8 @@ as_create(void)
     as->useg1 = array_create();
     as->useg2 = array_create();
     as->usegs = array_create();
-    as->tlb = kmalloc(sizeof(struct tlb));
+    as->tlb = kmalloc(sizeof(struct tlb));   
+    as->tlb->tlb_lock = lock_create("tlb lock");
     as->tlb->next_victim = 0;
     
 #endif
@@ -697,6 +734,7 @@ as_destroy(struct addrspace *as)
 	array_destroy(as->useg1);
     array_destroy(as->useg2);
     array_destroy(as->usegs);
+    lock_destroy(as->tlb->tlb_lock);
 	kfree(as);
 }
 
@@ -715,13 +753,13 @@ as_activate(struct addrspace *as)
     
 	// invalidate entries in TLB only if address spaces are different
     
-    if (as != curthread->t_vmspace)
-    {
+    //if (as != curthread->t_vmspace)
+    //{
         vmstats_inc(VMSTAT_TLB_INVALIDATE); /* STATS */
         for (i=0; i<NUM_TLB; i++) {
             TLB_Write(TLBHI_INVALID(i), TLBLO_INVALID(), i);
         }
-    }
+    //}
     
 	splx(spl);
 #else
@@ -776,7 +814,7 @@ int as_set_permission(int r, int w, int e)  {
 int
 as_define_region(struct addrspace *as, vaddr_t vaddr, size_t sz,
                  int readable, int writeable, int executable)
-{
+{ 
 	/*
 	 * Write this.
 	 */
@@ -805,6 +843,7 @@ as_define_region(struct addrspace *as, vaddr_t vaddr, size_t sz,
             p = kmalloc(sizeof(struct page));
             p->vaddr = vaddr + i * PAGE_SIZE;
             p->permission = as_set_permission(readable,writeable,executable);
+            p->valid = 0;
             array_add(as->useg1, p);
         }
         return 0;
@@ -819,6 +858,7 @@ as_define_region(struct addrspace *as, vaddr_t vaddr, size_t sz,
             p = kmalloc(sizeof(struct page));
             p->vaddr = vaddr + i * PAGE_SIZE;
             p->permission = as_set_permission(readable,writeable,executable);
+            p->valid = 0;
             array_add(as->useg2, p);
         }
         
