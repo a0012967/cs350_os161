@@ -12,6 +12,7 @@
 #include <machine/spl.h>
 #include <vm-tlb.h>
 #include <syscall.h>
+#include <uw-vmstats.h>
 #include "opt-A3.h"
 
 
@@ -149,6 +150,7 @@ getppages(unsigned long npages)
         assert((coremap[i-npages+1].paddr & PAGE_FRAME) == coremap[i-npages+1].paddr);//make sure the address is in the frame
         
         lock_release(core_lock);
+        
         return coremap[i-npages+1].paddr;
         
     }
@@ -190,11 +192,15 @@ void coremap_insertpid(paddr_t pa,pid_t pid){
     
 }
 
+
+
 vaddr_t 
 alloc_kpages(int npages)
 {
     
+    
     //kprintf("call to alloc_kpages: npages: %d\n",npages);
+    
     //virtually no change, only the implementation of getppages
 	paddr_t pa;
 	pa = getppages(npages);
@@ -205,6 +211,9 @@ alloc_kpages(int npages)
 		return 0;
 	}
     
+    
+    
+    
     vaddr_t va;
     va = PADDR_TO_KVADDR(pa);
     
@@ -214,6 +223,7 @@ alloc_kpages(int npages)
         coremap_insertpid(pa,curthread->t_process->PID);
     }
     // kprintf("alloc address: %p, npages: %d\n",va,npages);
+    
     
     
     return va;
@@ -232,6 +242,7 @@ free_kpages(vaddr_t addr)
     //kprintf("1\n");
     
     if(!(addr>USERTOP)){
+        // kprintf("this case: %d\n",curthread->t_process->PID);
         for(i = 0; i< coremap_size;i++){
             
             assert(curthread != NULL);
@@ -433,22 +444,14 @@ vm_fault(int faulttype, vaddr_t faultaddress)
         }
         
         //as->pt->pt[i] = pg; //don't need this line, done in line 293
-    }
-    
-    if (!pg->valid) // page not in page table
-    {
-        pg->valid = 1;
-        pg->vaddr = faultaddress;
         
+        _vmstats_inc(VMSTAT_PAGE_FAULT_DISK); /* STATS */
     }
     
 	switch (faulttype) {
 	    case VM_FAULT_READONLY:
             
             // we double check that the user has indeed permission to write to page
-            
-            
-            
             
             if (pg->permission == 0x1) // can be written to, as set in as_defined_region
             {
@@ -467,17 +470,48 @@ vm_fault(int faulttype, vaddr_t faultaddress)
             }
             else
             {
-                int retval; // useless for now
-                _exit(0, &retval);   
+                splx(spl);
+                int err; // useless for now
+                err = EFAULT;
+                _exit(0, &err);   
             }
             
             /* We always create pages read-write, so we can't get this */
             //panic("dumbvm: got VM_FAULT_READONLY\n");
 	    case VM_FAULT_READ: // need to add a new page
-            
+            if (!pg->valid)
+            {
+                pg->valid = 1;
+                pg->vaddr = faultaddress;
+                
+                _vmstats_inc(VMSTAT_PAGE_FAULT_ZERO); /* STATS */
+            }
+            else
+            {
+                _vmstats_inc(VMSTAT_TLB_RELOAD); /* STATS */
+            }
             break;
             
 	    case VM_FAULT_WRITE:
+            
+            if (pg->permission == 0x1) {
+                splx(spl);
+                int err; // useless for now
+                err = EFAULT;
+                _exit(0, &err);  
+            }
+            
+            if (!pg->valid)
+            {
+                pg->valid = 1;
+                pg->vaddr = faultaddress;
+                
+                _vmstats_inc(VMSTAT_PAGE_FAULT_ZERO); /* STATS */
+            }
+            else
+            {
+                _vmstats_inc(VMSTAT_TLB_RELOAD); /* STATS */
+            }
             break;
 	    default:
             splx(spl);
@@ -485,7 +519,7 @@ vm_fault(int faulttype, vaddr_t faultaddress)
             return EINVAL;
 	}
     
-	
+	_vmstats_inc(VMSTAT_TLB_FAULT);
     
 	for (i=0; i<NUM_TLB; i++) {
 		TLB_Read(&ehi, &elo, i);
@@ -498,22 +532,26 @@ vm_fault(int faulttype, vaddr_t faultaddress)
 		TLB_Write(ehi, elo, i);
 		splx(spl);
         //lock_release(as->tlb->tlb_lock);
+        
+        vmstats_inc(VMSTAT_TLB_FAULT_FREE); /* STATS */
 		return 0;
 	}
     
     // need a replacement algorithm
-    //kprintf("lol");
 	//kprintf("dumbvm: Ran out of TLB entries - cannot handle page fault\n");
 	//splx(spl);
-    
     int victim = tlb_get_rr_victim();
-    //kprintf("vm fault: got our victim through tlb_Get, %d \n",victim);
+    //kprintf("vm fault: got our victim, %d \n",victim);
     if (victim < 0 || victim >= NUM_TLB)
         return EFAULT;
+    
     ehi = faultaddress;
     elo = paddr | TLBLO_DIRTY | TLBLO_VALID;
+    
     TLB_Write(ehi, elo, victim);
     splx(spl);
+    
+    vmstats_inc(VMSTAT_TLB_FAULT_REPLACE); /* STATS */
     //lock_release(as->tlb->tlb_lock);
 	return 0;
 }
@@ -679,6 +717,7 @@ as_activate(struct addrspace *as)
     
     if (as != curthread->t_vmspace)
     {
+        vmstats_inc(VMSTAT_TLB_INVALIDATE); /* STATS */
         for (i=0; i<NUM_TLB; i++) {
             TLB_Write(TLBHI_INVALID(i), TLBLO_INVALID(), i);
         }
