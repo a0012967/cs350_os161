@@ -18,6 +18,7 @@
 #include <version.h>
 #include <uw-vmstats.h>
 #include "opt-A2.h"
+#include "opt-A3.h"
 
 /*
  * These two pieces of data are maintained by the makefiles and build system.
@@ -88,8 +89,10 @@ boot(void)
 	/* Default bootfs - but ignore failure, in case emu0 doesn't exist */
 	vfs_setbootfs("emu0");
 
+#if OPT_A3
         /* Uncomment to initialize Instrumentation (i.e. TLB stats) */
-        //vmstats_init();
+        vmstats_init();
+#endif
         
 	/*
 	 * Make sure various things aren't screwed up.
@@ -117,8 +120,10 @@ shutdown(void)
 	scheduler_shutdown();
 	thread_shutdown();
         
+#if OPT_A3
         /* Uncomment to print Instrumentation (i.e. TLB stats) */
-        //vmstats_print();
+        _vmstats_print();
+#endif
 }
 
 /*****************************************/

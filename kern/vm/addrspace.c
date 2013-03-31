@@ -12,6 +12,7 @@
 #include <machine/spl.h>
 #include <vm-tlb.h>
 #include <syscall.h>
+#include <uw-vmstats.h>
 #include "opt-A3.h"
 
 
@@ -190,6 +191,8 @@ void coremap_insertpid(paddr_t pa,pid_t pid){
     coremap[i].pid = pid;
     
 }
+
+
 
 vaddr_t 
 alloc_kpages(int npages)
@@ -424,40 +427,32 @@ vm_fault(int faulttype, vaddr_t faultaddress)
         pg = NULL;
     }
     //---
-    
-    if (pg == NULL)
-    {
-        //create page
-        pg = kmalloc(sizeof(struct page));
-        pg->vaddr = faultaddress;
-        pg->paddr = paddr;
-        pg->valid = 1;
-        if (segment == 0)   {
-            pg->permission = 0x5;
-        } else if (segment == 1)    {
-            pg->permission = 0x6;
-        } else {
-            pg->permission = 0x7;
+        
+        if (pg == NULL)
+        {
+            //create page
+            pg = kmalloc(sizeof(struct page));
+            pg->vaddr = faultaddress;
+            pg->paddr = paddr;
+            pg->valid = 1;
+            if (segment == 0)   {
+                pg->permission = 0x5;
+            } else if (segment == 1)    {
+                pg->permission = 0x6;
+            } else {
+                pg->permission = 0x7;
+            }
+                
+            //as->pt->pt[i] = pg; //don't need this line, done in line 293
+            
+            _vmstats_inc(VMSTAT_PAGE_FAULT_DISK); /* STATS */
         }
-        
-        //as->pt->pt[i] = pg; //don't need this line, done in line 293
-    }
-    
-    if (!pg->valid) // page not in page table
-    {
-        pg->valid = 1;
-        pg->vaddr = faultaddress;
-        
-    }
     
 	switch (faulttype) {
 	    case VM_FAULT_READONLY:
             
             // we double check that the user has indeed permission to write to page
-            
-            
-            
-            
+
             if (pg->permission == 0x1) // can be written to, as set in as_defined_region
             {
                 int tlb_entry = TLB_Probe(faultaddress, 0);
@@ -475,26 +470,57 @@ vm_fault(int faulttype, vaddr_t faultaddress)
             }
             else
             {
-                int retval; // useless for now
-                _exit(0, &retval);   
+                splx(spl);
+                int err; // useless for now
+                err = EFAULT;
+                _exit(0, &err);   
             }
-            
-            /* We always create pages read-write, so we can't get this */
-            //panic("dumbvm: got VM_FAULT_READONLY\n");
+                
+		/* We always create pages read-write, so we can't get this */
+		//panic("dumbvm: got VM_FAULT_READONLY\n");
 	    case VM_FAULT_READ: // need to add a new page
-            
+                if (!pg->valid)
+                {
+                    pg->valid = 1;
+                    pg->vaddr = faultaddress;
+
+                    _vmstats_inc(VMSTAT_PAGE_FAULT_ZERO); /* STATS */
+                }
+                else
+                {
+                    _vmstats_inc(VMSTAT_TLB_RELOAD); /* STATS */
+                }
             break;
             
 	    case VM_FAULT_WRITE:
-            break;
+                
+                if (pg->permission == 0x1) {
+                    splx(spl);
+                    int err; // useless for now
+                    err = EFAULT;
+                    _exit(0, &err);  
+                }
+                
+                if (!pg->valid)
+                {
+                    pg->valid = 1;
+                    pg->vaddr = faultaddress;
+
+                    _vmstats_inc(VMSTAT_PAGE_FAULT_ZERO); /* STATS */
+                }
+                else
+                {
+                    _vmstats_inc(VMSTAT_TLB_RELOAD); /* STATS */
+                }
+		break;
 	    default:
-            splx(spl);
-            //lock_release(as->tlb->tlb_lock);
-            return EINVAL;
+		splx(spl);
+                //lock_release(as->tlb->tlb_lock);
+		return EINVAL;
 	}
-    
-	
-    
+
+	_vmstats_inc(VMSTAT_TLB_FAULT);
+
 	for (i=0; i<NUM_TLB; i++) {
 		TLB_Read(&ehi, &elo, i);
 		if (elo & TLBLO_VALID) {
@@ -506,22 +532,26 @@ vm_fault(int faulttype, vaddr_t faultaddress)
 		TLB_Write(ehi, elo, i);
 		splx(spl);
         //lock_release(as->tlb->tlb_lock);
+                
+                vmstats_inc(VMSTAT_TLB_FAULT_FREE); /* STATS */
 		return 0;
 	}
     
     // need a replacement algorithm
-    //kprintf("lol");
 	//kprintf("dumbvm: Ran out of TLB entries - cannot handle page fault\n");
 	//splx(spl);
-    
     int victim = tlb_get_rr_victim();
-    //kprintf("vm fault: got our victim through tlb_Get, %d \n",victim);
+    //kprintf("vm fault: got our victim, %d \n",victim);
     if (victim < 0 || victim >= NUM_TLB)
         return EFAULT;
+    
     ehi = faultaddress;
     elo = paddr | TLBLO_DIRTY | TLBLO_VALID;
+    
     TLB_Write(ehi, elo, victim);
     splx(spl);
+    
+    vmstats_inc(VMSTAT_TLB_FAULT_REPLACE); /* STATS */
     //lock_release(as->tlb->tlb_lock);
 	return 0;
 }
@@ -687,6 +717,7 @@ as_activate(struct addrspace *as)
     
     if (as != curthread->t_vmspace)
     {
+        vmstats_inc(VMSTAT_TLB_INVALIDATE); /* STATS */
         for (i=0; i<NUM_TLB; i++) {
             TLB_Write(TLBHI_INVALID(i), TLBLO_INVALID(), i);
         }
@@ -701,34 +732,34 @@ as_activate(struct addrspace *as)
 //helper function for as_define_region -  to determine page's permission
 int as_set_permission(int r, int w, int e)  {
     /*if (r == 0) {
-     if (w == 0) {
-     if (e == 0) {
-     return 0; //000
-     } else {// e = 1
-     return 3;   //001
-     }
-     } else { // w = 1
-     if (e == 0) {
-     return 2; //010
-     } else {// e = 1
-     return 6; //011
-     }
-     }
-     } else {//r = 1
-     if (w == 0) {
-     if (e == 0) {
-     return 1; //100
-     } else {// e = 1
-     return 5; //101
-     }
-     } else { // w = 1
-     if (e == 0) {
-     return 4; //110
-     } else {// e = 1
-     return 7; //111
-     }
-     }
-     }*/
+        if (w == 0) {
+            if (e == 0) {
+                return 0; //000
+            } else {// e = 1
+                return 3;   //001
+            }
+        } else { // w = 1
+            if (e == 0) {
+                return 2; //010
+            } else {// e = 1
+                return 6; //011
+            }
+        }
+    } else {//r = 1
+        if (w == 0) {
+            if (e == 0) {
+                return 1; //100
+            } else {// e = 1
+                return 5; //101
+            }
+        } else { // w = 1
+            if (e == 0) {
+                return 4; //110
+            } else {// e = 1
+                return 7; //111
+            }
+        }
+    }*/
     
     return r|w|e;
 }
@@ -820,7 +851,7 @@ as_prepare_load(struct addrspace *as)
 	assert(as->as_pbase2 == 0);
 	assert(as->as_stackpbase == 0);
     
-    
+        
 	as->as_pbase1 = getppages(as->as_npages1);
 	if (as->as_pbase1 == 0) {
 		return ENOMEM;
@@ -830,7 +861,7 @@ as_prepare_load(struct addrspace *as)
 	if (as->as_pbase2 == 0) {
 		return ENOMEM;
 	}
-    
+        
 	as->as_stackpbase = getppages(DUMBVM_STACKPAGES);
 	if (as->as_stackpbase == 0) {
 		return ENOMEM;
@@ -884,7 +915,7 @@ as_define_stack(struct addrspace *as, vaddr_t *stackptr)
         p->permission = 0x7;
         array_add(as->usegs, p);
     }
-    
+
     *stackptr = USERSTACK;
     return 0;
 #else
@@ -905,272 +936,272 @@ as_define_stack(struct addrspace *as, vaddr_t *stackptr)
 
 
 /*
- // Note! If OPT_DUMBVM is set, as is the case until you start the VM
- // assignment, this file is not compiled or linked or in any way
- // used. The cheesy hack versions in dumbvm.c are used instead.
- //
- 
- struct addrspace *
- as_create(void)
- {
- struct addrspace *as = kmalloc(sizeof(struct addrspace));
- if (as==NULL) {
- return NULL;
- }
- 
- #if OPT_A3
- int err;
- 
- kprintf("address of as %x\n",as);
- err = pagetable_create(as);
- //as->pt = array_create();
- 
- if (err)
- return NULL;
- 
- // create the lock for the tlb table
- //as->tlb->tlb_lock = lock_create("tlb lock");
- 
- //if (as->tlb->tlb_lock == NULL)
- //panic("as_create: Cannot create tlb lock\n");
- 
- // initialize next victim for round robin algo
- //as->tlb->next_victim = 0;
- 
- as->as_vbase1 = 0;
- as->as_pbase1 = 0;
- as->as_npages1 = 0;
- as->as_vbase2 = 0;
- as->as_pbase2 = 0;
- as->as_npages2 = 0;
- as->as_stackpbase = 0;
- 
- return as;
- 
- #else
- return as;
- #endif
- }
- 
- int
- as_copy(struct addrspace *old, struct addrspace **ret)
- {
- #if OPT_A3
- struct addrspace *new;
- 
- new = as_create();
- if (new==NULL) {
- return ENOMEM;
- }
- 
- new->as_vbase1 = old->as_vbase1;
- new->as_npages1 = old->as_npages1;
- new->as_vbase2 = old->as_vbase2;
- new->as_npages2 = old->as_npages2;
- 
- if (as_prepare_load(new)) {
- as_destroy(new);
- return ENOMEM;
- }
- 
- assert(new->as_pbase1 != 0);
- assert(new->as_pbase2 != 0);
- assert(new->as_stackpbase != 0);
- 
- memmove((void *)PADDR_TO_KVADDR(new->as_pbase1),
- (const void *)PADDR_TO_KVADDR(old->as_pbase1),
- old->as_npages1*PAGE_SIZE);
- 
- memmove((void *)PADDR_TO_KVADDR(new->as_pbase2),
- (const void *)PADDR_TO_KVADDR(old->as_pbase2),
- old->as_npages2*PAGE_SIZE);
- 
- memmove((void *)PADDR_TO_KVADDR(new->as_stackpbase),
- (const void *)PADDR_TO_KVADDR(old->as_stackpbase),
- DUMBVM_STACKPAGES*PAGE_SIZE);
- 
- *ret = new;
- return 0;
- #else
- struct addrspace *newas;
- 
- newas = as_create();
- if (newas == NULL){
- return ENOMEM;
- }
- 
- (void)old;
- 
- *ret = newas;
- return 0;
- #endif
- }
- 
- void
- as_destroy(struct addrspace *as)
- {
- #if OPT_A3
- 
- //lock_destroy(as->tlb);
- pagetable_destroy(as);
- kfree(as);
- 
- #else
- 
- // Clean up as needed.
- 
- 
- kfree(as);
- #endif
- }
- 
- void
- as_activate(struct addrspace *as)
- {
- #if OPT_A3
- kprintf("In as activate\n");
- 
- //Write this.
- 
- int i, spl;
- 
- (void)as;
- 
- spl = splhigh();
- 
- // invalidate entries in TLB only if address spaces are different
- 
- if (as != curthread->t_vmspace)
- {
- for (i=0; i<NUM_TLB; i++) {
- TLB_Write(TLBHI_INVALID(i), TLBLO_INVALID(), i);
- }
- }
- 
- splx(spl);
- #else
- (void)as;
- #endif
- }
- 
- 
- int
- as_define_region(struct addrspace *as, vaddr_t vaddr, size_t sz,
- int readable, int writeable, int executable)
- {
- #if OPT_A3
- size_t npages; 
- kprintf("In as define region\n");
- //  kprintf("Pageframe: %x, size %d\n",PAGE_FRAME,sz);
- //Align the region. First, the base... 
- sz += vaddr & ~(vaddr_t)PAGE_FRAME;
- vaddr &= PAGE_FRAME;
- //  kprintf("Pageframe after: %x, size %d\n",PAGE_FRAME,sz);
- // ...and now the length. 
- sz = (sz + PAGE_SIZE - 1) & PAGE_FRAME;
- 
- npages = sz / PAGE_SIZE;
- 
- // We don't use these - all pages are read-write 
- (void)readable;
- (void)writeable;
- (void)executable;
- 
- if (as->as_vbase1 == 0) {
- as->as_vbase1 = vaddr;
- as->as_npages1 = npages;
- return 0;
- }
- 
- if (as->as_vbase2 == 0) {
- as->as_vbase2 = vaddr;
- as->as_npages2 = npages;
- return 0;
- }
- 
- 
- // Support for more than two regions is not available.
- 
- kprintf("dumbvm: Warning: too many regions\n");
- return EUNIMP;
- 
- #else
- 
- (void)as;
- (void)vaddr;
- (void)sz;
- (void)readable;
- (void)writeable;
- (void)executable;
- return EUNIMP;
- #endif
- 
- }
- 
- int
- as_prepare_load(struct addrspace *as)
- {
- #if OPT_A3
- kprintf("In as prepare load\n");
- assert(as->as_pbase1 == 0);
- assert(as->as_pbase2 == 0);
- assert(as->as_stackpbase == 0);
- 
- as->as_pbase1 = getppages(as->as_npages1);
- if (as->as_pbase1 == 0) {
- return ENOMEM;
- }
- 
- as->as_pbase2 = getppages(as->as_npages2);
- if (as->as_pbase2 == 0) {
- return ENOMEM;
- }
- 
- as->as_stackpbase = getppages(DUMBVM_STACKPAGES);
- if (as->as_stackpbase == 0) {
- return ENOMEM;
- }
- 
- return 0;
- #else
- 
- (void)as;
- return 0;
- #endif
- }
- 
- int
- as_complete_load(struct addrspace *as)
- {
- #if OPT_A3
- kprintf("In as complete load\n");
- 
- (void)as;
- return 0;
- #else
- (void)as;
- return 0;
- #endif
- }
- 
- int
- as_define_stack(struct addrspace *as, vaddr_t *stackptr)
- {
- #if OPT_A3
- assert(as->as_stackpbase != 0);
- kprintf("In as define stack\n");
- *stackptr = USERSTACK;
- return 0;
- #else
- 
- 
- (void)as;
- 
- 
- *stackptr = USERSTACK;
- 
- return 0;
- #endif
- }
- 
- */
+// Note! If OPT_DUMBVM is set, as is the case until you start the VM
+// assignment, this file is not compiled or linked or in any way
+// used. The cheesy hack versions in dumbvm.c are used instead.
+//
+
+struct addrspace *
+as_create(void)
+{
+	struct addrspace *as = kmalloc(sizeof(struct addrspace));
+	if (as==NULL) {
+		return NULL;
+	}
+        
+#if OPT_A3
+        int err;
+        
+        kprintf("address of as %x\n",as);
+        err = pagetable_create(as);
+        //as->pt = array_create();
+        
+        if (err)
+            return NULL;
+        
+        // create the lock for the tlb table
+        //as->tlb->tlb_lock = lock_create("tlb lock");
+        
+        //if (as->tlb->tlb_lock == NULL)
+            //panic("as_create: Cannot create tlb lock\n");
+        
+        // initialize next victim for round robin algo
+        //as->tlb->next_victim = 0;
+        
+	as->as_vbase1 = 0;
+	as->as_pbase1 = 0;
+	as->as_npages1 = 0;
+	as->as_vbase2 = 0;
+	as->as_pbase2 = 0;
+	as->as_npages2 = 0;
+	as->as_stackpbase = 0;
+
+	return as;
+        
+#else
+        return as;
+#endif
+}
+
+int
+as_copy(struct addrspace *old, struct addrspace **ret)
+{
+#if OPT_A3
+	struct addrspace *new;
+
+	new = as_create();
+	if (new==NULL) {
+		return ENOMEM;
+	}
+
+	new->as_vbase1 = old->as_vbase1;
+	new->as_npages1 = old->as_npages1;
+	new->as_vbase2 = old->as_vbase2;
+	new->as_npages2 = old->as_npages2;
+
+	if (as_prepare_load(new)) {
+		as_destroy(new);
+		return ENOMEM;
+	}
+
+	assert(new->as_pbase1 != 0);
+	assert(new->as_pbase2 != 0);
+	assert(new->as_stackpbase != 0);
+
+	memmove((void *)PADDR_TO_KVADDR(new->as_pbase1),
+		(const void *)PADDR_TO_KVADDR(old->as_pbase1),
+		old->as_npages1*PAGE_SIZE);
+
+	memmove((void *)PADDR_TO_KVADDR(new->as_pbase2),
+		(const void *)PADDR_TO_KVADDR(old->as_pbase2),
+		old->as_npages2*PAGE_SIZE);
+
+	memmove((void *)PADDR_TO_KVADDR(new->as_stackpbase),
+		(const void *)PADDR_TO_KVADDR(old->as_stackpbase),
+		DUMBVM_STACKPAGES*PAGE_SIZE);
+	
+	*ret = new;
+	return 0;
+#else
+        struct addrspace *newas;
+        
+        newas = as_create();
+        if (newas == NULL){
+            return ENOMEM;
+        }
+        
+        (void)old;
+        
+        *ret = newas;
+        return 0;
+#endif
+}
+
+void
+as_destroy(struct addrspace *as)
+{
+#if OPT_A3
+    
+    //lock_destroy(as->tlb);
+    pagetable_destroy(as);
+    kfree(as);
+    
+#else
+	
+	 // Clean up as needed.
+	 
+	
+	kfree(as);
+#endif
+}
+
+void
+as_activate(struct addrspace *as)
+{
+#if OPT_A3
+    kprintf("In as activate\n");
+	
+    //Write this.
+	 
+    int i, spl;
+
+	(void)as;
+
+	spl = splhigh();
+
+	// invalidate entries in TLB only if address spaces are different
+        
+        if (as != curthread->t_vmspace)
+        {
+            for (i=0; i<NUM_TLB; i++) {
+                    TLB_Write(TLBHI_INVALID(i), TLBLO_INVALID(), i);
+            }
+        }
+
+	splx(spl);
+#else
+        (void)as;
+#endif
+}
+
+
+int
+as_define_region(struct addrspace *as, vaddr_t vaddr, size_t sz,
+		 int readable, int writeable, int executable)
+{
+#if OPT_A3
+    size_t npages; 
+    kprintf("In as define region\n");
+  //  kprintf("Pageframe: %x, size %d\n",PAGE_FRAME,sz);
+	//Align the region. First, the base... 
+	sz += vaddr & ~(vaddr_t)PAGE_FRAME;
+	vaddr &= PAGE_FRAME;
+  //  kprintf("Pageframe after: %x, size %d\n",PAGE_FRAME,sz);
+	// ...and now the length. 
+	sz = (sz + PAGE_SIZE - 1) & PAGE_FRAME;
+
+	npages = sz / PAGE_SIZE;
+
+	// We don't use these - all pages are read-write 
+	(void)readable;
+	(void)writeable;
+	(void)executable;
+
+	if (as->as_vbase1 == 0) {
+		as->as_vbase1 = vaddr;
+		as->as_npages1 = npages;
+		return 0;
+	}
+
+	if (as->as_vbase2 == 0) {
+		as->as_vbase2 = vaddr;
+		as->as_npages2 = npages;
+		return 0;
+	}
+
+	
+	 // Support for more than two regions is not available.
+	 
+	kprintf("dumbvm: Warning: too many regions\n");
+	return EUNIMP;
+        
+#else
+
+	(void)as;
+	(void)vaddr;
+	(void)sz;
+	(void)readable;
+	(void)writeable;
+	(void)executable;
+	return EUNIMP;
+#endif
+       
+}
+
+int
+as_prepare_load(struct addrspace *as)
+{
+#if OPT_A3
+    kprintf("In as prepare load\n");
+    assert(as->as_pbase1 == 0);
+	assert(as->as_pbase2 == 0);
+	assert(as->as_stackpbase == 0);
+    
+	as->as_pbase1 = getppages(as->as_npages1);
+	if (as->as_pbase1 == 0) {
+		return ENOMEM;
+	}
+
+	as->as_pbase2 = getppages(as->as_npages2);
+	if (as->as_pbase2 == 0) {
+		return ENOMEM;
+	}
+
+	as->as_stackpbase = getppages(DUMBVM_STACKPAGES);
+	if (as->as_stackpbase == 0) {
+		return ENOMEM;
+	}
+
+	return 0;
+#else
+
+	(void)as;
+	return 0;
+#endif
+}
+
+int
+as_complete_load(struct addrspace *as)
+{
+#if OPT_A3
+    kprintf("In as complete load\n");
+
+        (void)as;
+	return 0;
+#else
+	(void)as;
+	return 0;
+#endif
+}
+
+int
+as_define_stack(struct addrspace *as, vaddr_t *stackptr)
+{
+#if OPT_A3
+        assert(as->as_stackpbase != 0);
+        kprintf("In as define stack\n");
+	*stackptr = USERSTACK;
+	return 0;
+#else
+	
+
+	(void)as;
+
+	
+	*stackptr = USERSTACK;
+	
+	return 0;
+#endif
+}
+
+*/
