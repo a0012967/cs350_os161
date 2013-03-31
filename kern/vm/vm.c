@@ -1,0 +1,19 @@
+#include <types.h>
+#include <kern/errno.h>
+#include <lib.h>
+#include <synch.h>
+#include <thread.h>
+#include <curthread.h>
+#include <addrspace.h>
+#include <vm.h>
+#include <pt.h>
+#include <coremap.h>
+#include <machine/tlb.h>
+#include <machine/spl.h>
+#include <vm-tlb.h>
+#include <syscall.h>
+#include <addrspace.h>
+#include <uw-vmstats.h>
+#include <vm.h>
+#include "opt-A3.h"
+
