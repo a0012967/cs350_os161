@@ -39,10 +39,13 @@
 #define WE_ONLY 0x3
 #define RWE 0x7
 
+int first_load = 1;
+
 void vm_bootstrap(){
     
     core_lock = lock_create("coremap-lock");
-    
+    tlb.tlb_lock = lock_create("tlb-lock");
+    tlb.next_victim = 0;
     
     struct coremap *entry; //at the end should point to the same memory as pagetable in pt.h
     coremap_size =0;
@@ -362,8 +365,8 @@ vm_fault(int faulttype, vaddr_t faultaddress)
     int p_i;
 #endif /* _OPT_A3_ */
     
-	spl = splhigh();
-    //lock_acquire(as->tlb->tlb_lock);
+	//spl = splhigh();
+    lock_acquire(tlb.tlb_lock);
     
 	faultaddress &= PAGE_FRAME;
     
@@ -410,8 +413,8 @@ vm_fault(int faulttype, vaddr_t faultaddress)
 		paddr = (faultaddress - stackbase) + as->as_stackpbase;
 	}
 	else {
-		splx(spl);
-        //lock_release(as->tlb->tlb_lock);
+		//splx(spl);
+        lock_release(tlb.tlb_lock);
 		return EFAULT;
 	}
     
@@ -449,31 +452,12 @@ vm_fault(int faulttype, vaddr_t faultaddress)
 	    case VM_FAULT_READONLY:
                 
                 // we double check that the user has indeed permission to write to page
-                if (pg->permission == W_ONLY || pg->permission == RW_ONLY ||
-                        pg->permission == WE_ONLY || pg->permission == RWE) // can be written to, as set in as_defined_region
-                {
-                    int tlb_entry = TLB_Probe(faultaddress, 0);
-
-                    TLB_Read(&ehi, &elo, tlb_entry);
-
-                    if (ehi != faultaddress)
-                        panic("vm_fault: ehi not equal to faultaddr\n");
-
-                    elo = pg->paddr | TLBLO_DIRTY | TLBLO_VALID;
-
-                    TLB_Write(ehi, elo, tlb_entry);
-
-                    wr_to = 1;
-                    break;
-                }
-                else
-                {
-                    splx(spl);
-                     //lock_release(as->tlb->tlb_lock);
+                
+                    lock_release(tlb.tlb_lock);
                     int err; // useless for now
                     err = EFAULT;
                     _exit(0, &err);   
-                }
+                
                 
 		/* We always create pages read-write, so we can't get this */
 	    case VM_FAULT_READ: // need to add a new page
@@ -484,8 +468,9 @@ vm_fault(int faulttype, vaddr_t faultaddress)
                     paddr = getppages(1);
                     if (paddr == NULL)
                     {
-                        //lock_release(as->tlb->tlb_lock);
+                        lock_release(tlb.tlb_lock);
                         return ENOMEM;
+                        
                     }
                     pg->paddr = paddr;
                         
@@ -506,7 +491,7 @@ vm_fault(int faulttype, vaddr_t faultaddress)
                     err = EFAULT;
                     _exit(0, &err);  
                 }*/
-                
+                wr_to = 1;
                 if (!pg->valid)
                 {
                     pg->valid = 1;
@@ -514,7 +499,7 @@ vm_fault(int faulttype, vaddr_t faultaddress)
                     paddr = getppages(1);
                     if (paddr == NULL)
                     {
-                        lock_release(as->tlb->tlb_lock);
+                        lock_release(tlb.tlb_lock);
                         return ENOMEM;
                     }
                     pg->paddr = paddr;
@@ -529,14 +514,14 @@ vm_fault(int faulttype, vaddr_t faultaddress)
                 }
 		break;
 	    default:
-		splx(spl);
-                //lock_release(as->tlb->tlb_lock);
+		//splx(spl);
+                lock_release(tlb.tlb_lock);
 		return EINVAL;
 	}
 
 	_vmstats_inc(VMSTAT_TLB_FAULT);
 
-        if (!wr_to) {
+        
             for (i=0; i<NUM_TLB; i++) {
                     TLB_Read(&ehi, &elo, i);
                     if (elo & TLBLO_VALID) {
@@ -544,16 +529,22 @@ vm_fault(int faulttype, vaddr_t faultaddress)
                     }
                     ehi = faultaddress;
 
-                    //if (faultaddress >= vbase1 && faultaddress < vtop1){
-                         //elo = paddr | TLBLO_VALID;
-                    //}else{
+                    if (first_load && wr_to && faultaddress >= vbase1 && faultaddress < vtop1) {
                         elo = paddr | TLBLO_DIRTY | TLBLO_VALID;
-                    //}
+                        first_load = 0;
+                    }
+                    else {
+                        if (faultaddress >= vbase1 && faultaddress < vtop1){
+                             elo = paddr | TLBLO_VALID;
+                        }else{
+                            elo = paddr | TLBLO_DIRTY | TLBLO_VALID;
+                        }
+                    }
 
                     DEBUG(DB_VM, "dumbvm: 0x%x -> 0x%x\n", faultaddress, paddr);
                     TLB_Write(ehi, elo, i);
-                    splx(spl);
-            //lock_release(as->tlb->tlb_lock);
+                    //splx(spl);
+            lock_release(tlb.tlb_lock);
 
                     vmstats_inc(VMSTAT_TLB_FAULT_FREE); /* STATS */
                     return 0;
@@ -561,35 +552,36 @@ vm_fault(int faulttype, vaddr_t faultaddress)
 
         // need a replacement algorithm
             //kprintf("dumbvm: Ran out of TLB entries - cannot handle page fault\n");
-            splx(spl);
+            //splx(spl);
             int victim = tlb_get_rr_victim();
             //kprintf("vm fault: got our victim, %d \n",victim);
             if (victim < 0 || victim >= NUM_TLB)
             {
-                 //lock_release(as->tlb->tlb_lock);
+                 lock_release(tlb.tlb_lock);
                 return EFAULT;
             }
 
             ehi = faultaddress;
-            //if (faultaddress >= vbase1 && faultaddress < vtop1){
-                //elo = paddr | TLBLO_VALID;
-           //}else{
-               elo = paddr | TLBLO_DIRTY | TLBLO_VALID;
-           //}
+            
+            if (first_load && wr_to && faultaddress >= vbase1 && faultaddress < vtop1) {
+                elo = paddr | TLBLO_DIRTY | TLBLO_VALID;
+                first_load = 0;
+            }
+            else {
+                if (faultaddress >= vbase1 && faultaddress < vtop1){
+                        elo = paddr | TLBLO_VALID;
+                }else{
+                        elo = paddr | TLBLO_DIRTY | TLBLO_VALID;
+                }
+            }
 
             TLB_Write(ehi, elo, victim);
-            splx(spl);
+            //splx(spl);
 
             vmstats_inc(VMSTAT_TLB_FAULT_REPLACE); /* STATS */
-            //lock_release(as->tlb->tlb_lock);
+            lock_release(tlb.tlb_lock);
                 return 0;
-        }
-        else{
-             //lock_release(as->tlb->tlb_lock);
-            splx(spl);
-            vmstats_inc(VMSTAT_TLB_FAULT_REPLACE); /* STATS */
-            return 0;
-        }
+
 }
 
 
@@ -630,9 +622,9 @@ as_create(void)
     as->useg1 = array_create();
     as->useg2 = array_create();
     as->usegs = array_create();
-    as->tlb = kmalloc(sizeof(struct tlb));   
-    as->tlb->tlb_lock = lock_create("tlb lock");
-    as->tlb->next_victim = 0;
+    //as->tlb = kmalloc(sizeof(struct tlb));   
+    //as->tlb->tlb_lock = lock_create("tlb lock");
+    //as->tlb->next_victim = 0;
     
 #endif
     
@@ -724,7 +716,7 @@ as_copy(struct addrspace *old, struct addrspace **ret)
 	(void)old;
 	
 	*ret = newas;
-	return 0;
+	return 0;.;
 #endif /* _OPT_A3_ */
 }
 
@@ -734,7 +726,7 @@ as_destroy(struct addrspace *as)
 	array_destroy(as->useg1);
     array_destroy(as->useg2);
     array_destroy(as->usegs);
-    lock_destroy(as->tlb->tlb_lock);
+    //lock_destroy(as->tlb->tlb_lock);
 	kfree(as);
 }
 

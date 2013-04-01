@@ -17,6 +17,8 @@ struct tlb {
 
 int tlb_get_rr_victim(void);
 
+struct tlb tlb;
+
 #endif
 #endif	/* VM_TLB_H */
 
