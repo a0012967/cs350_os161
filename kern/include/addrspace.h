@@ -32,12 +32,12 @@ struct addrspace {
     paddr_t as_page_dir; 
         
     vaddr_t as_vbase1;
-	paddr_t as_pbase1;
+	//paddr_t as_pbase1;   // Yi: don't need pbase anymore since memory is not continugous
 	size_t as_npages1;
 	vaddr_t as_vbase2;
-	paddr_t as_pbase2;
+	//paddr_t as_pbase2;
 	size_t as_npages2;
-	paddr_t as_stackpbase;
+	//paddr_t as_stackpbase;
     
     
     struct array *useg1;    //code

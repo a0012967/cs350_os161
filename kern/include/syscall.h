@@ -16,6 +16,10 @@ int write(int fd, const void *buf, size_t nbytes,int *retval);
 int read(int fd, void *buf, size_t nbytes, int *retval);
 void _exit(int exitcode,int *retval);
 int execv(char *progname, char** argv_o);
+pid_t getpid();
+pid_t waitpid(pid_t pid, int *status, int options, int *errno);
+int sys_fork(struct trapframe *tf, int * retval);
+
 #endif /* _OPT_A2_ */
 
 #endif /* _SYSCALL_H_ */
