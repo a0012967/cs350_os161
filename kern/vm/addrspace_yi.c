@@ -71,8 +71,6 @@ vm_fault(int faulttype, vaddr_t faultaddress)
 }
 
 
-
-
 /*
  * Note! If OPT_DUMBVM is set, as is the case until you start the VM
  * assignment, this file is not compiled or linked or in any way
@@ -86,12 +84,12 @@ as_create(void)
 	if (as==NULL) {
 		return NULL;
 	}
-
+    
 	/*
 	 * Initialize as needed.
 	 */
 #if OPT_A3
-    as_page_dir = alloc_kpages(1);
+    //as->as_page_dir = alloc_kpages(1);
 	as->as_vbase1 = 0;
 	as->as_pbase1 = 0;
 	as->as_npages1 = 0;
@@ -104,30 +102,102 @@ as_create(void)
     as->useg1 = array_create();
     as->useg2 = array_create();
     as->usegs = array_create();
+    as->tlb = kmalloc(sizeof(struct tlb));   
+    as->tlb->tlb_lock = lock_create("tlb lock");
+    as->tlb->next_victim = 0;
     
 #endif
-
+    
 	return as;
 }
 
 int
 as_copy(struct addrspace *old, struct addrspace **ret)
 {
-	struct addrspace *newas;
-
+#if OPT_A3
+    struct addrspace *new;
+    
+	new = as_create();
+	if (new==NULL) {
+		return ENOMEM;
+	}
+    
+	new->as_vbase1 = old->as_vbase1;
+	new->as_npages1 = old->as_npages1;
+	new->as_vbase2 = old->as_vbase2;
+	new->as_npages2 = old->as_npages2;
+    
+	if (as_prepare_load(new)) {
+		as_destroy(new);
+		return ENOMEM;
+	}
+    
+	assert(new->as_pbase1 != 0);
+	assert(new->as_pbase2 != 0);
+	assert(new->as_stackpbase != 0);
+    
+    unsigned int i;
+    struct page *e;
+    
+    for (i = 0; i < new->as_npages1; i++)   {
+        e = kmalloc(sizeof(struct page));
+        e->vaddr = new->as_vbase1 + i * PAGE_SIZE;
+        e->paddr = new->as_pbase1 + i + PAGE_SIZE;
+        e->valid = 1;
+        e->permission = 0x5; //re
+        array_add(new->useg1, e);
+    }
+	memmove((void *)PADDR_TO_KVADDR(new->as_pbase1),
+            (const void *)PADDR_TO_KVADDR(old->as_pbase1),
+            old->as_npages1*PAGE_SIZE);
+    
+    
+    for (i = 0; i < new->as_npages2; i++)   {
+        e = kmalloc(sizeof(struct page));
+        e->vaddr = new->as_vbase2 + i * PAGE_SIZE;
+        e->paddr = new->as_pbase2 + i + PAGE_SIZE;
+        e->valid = 1;
+        e->permission = 0x6; //rw
+        array_add(new->useg2, e);
+    }
+	memmove((void *)PADDR_TO_KVADDR(new->as_pbase2),
+            (const void *)PADDR_TO_KVADDR(old->as_pbase2),
+            old->as_npages2*PAGE_SIZE);
+    
+    for (i = 0; i < DUMBVM_STACKPAGES; i++)   {
+        e = kmalloc(sizeof(struct page));
+        e->vaddr = USERSTACK - i * PAGE_SIZE;
+        e->paddr = new->as_stackpbase + i + PAGE_SIZE;
+        e->valid = 1;
+        e->permission = 0x7; //rwe
+        array_add(new->usegs, e);
+    }
+    
+	memmove((void *)PADDR_TO_KVADDR(new->as_stackpbase),
+            (const void *)PADDR_TO_KVADDR(old->as_stackpbase),
+            DUMBVM_STACKPAGES*PAGE_SIZE);
+	
+	*ret = new;
+	return 0;
+    
+    
+#else
+    struct addrspace *newas;
+    
 	newas = as_create();
 	if (newas==NULL) {
 		return ENOMEM;
 	}
-
+    
 	/*
 	 * Write this.
 	 */
-
+    
 	(void)old;
 	
 	*ret = newas;
 	return 0;
+#endif /* _OPT_A3_ */
 }
 
 void
@@ -136,51 +206,72 @@ as_destroy(struct addrspace *as)
 	array_destroy(as->useg1);
     array_destroy(as->useg2);
     array_destroy(as->usegs);
+    lock_destroy(as->tlb->tlb_lock);
 	kfree(as);
 }
 
 void
 as_activate(struct addrspace *as)
 {
+#if OPT_A3
 	/*
 	 * Write this.
 	 */
-
-	(void)as;  // suppress warning until code gets written
+    int i, spl;
+    
+	(void)as;
+    
+	spl = splhigh();
+    
+	// invalidate entries in TLB only if address spaces are different
+    
+    //if (as != curthread->t_vmspace)
+    //{
+    vmstats_inc(VMSTAT_TLB_INVALIDATE); /* STATS */
+    for (i=0; i<NUM_TLB; i++) {
+        TLB_Write(TLBHI_INVALID(i), TLBLO_INVALID(), i);
+    }
+    //}
+    
+	splx(spl);
+#else
+    (void)as;
+#endif /* _OPT_A3_ */
 }
 
-
-//helper function to determine page's permission
+//helper function for as_define_region -  to determine page's permission
 int as_set_permission(int r, int w, int e)  {
-    if (r == 0) {
-        if (w == 0) {
-            if (e == 0) {
-                return 0; //000
-            } else {// e = 1
-                return 3;   //001
-            }
-        } else { // w = 1
-            if (e == 0) {
-                return 2; //010
-            } else {// e = 1
-                return 6; //011
-            }
-        }
-    } else {//r = 1
-        if (w == 0) {
-            if (e == 0) {
-                return 1; //100
-            } else {// e = 1
-                return 5; //101
-            }
-        } else { // w = 1
-            if (e == 0) {
-                return 4; //110
-            } else {// e = 1
-                return 7; //111
-            }
-        }
-    }
+    /*if (r == 0) {
+     if (w == 0) {
+     if (e == 0) {
+     return 0; //000
+     } else {// e = 1
+     return 3;   //001
+     }
+     } else { // w = 1
+     if (e == 0) {
+     return 2; //010
+     } else {// e = 1
+     return 6; //011
+     }
+     }
+     } else {//r = 1
+     if (w == 0) {
+     if (e == 0) {
+     return 1; //100
+     } else {// e = 1
+     return 5; //101
+     }
+     } else { // w = 1
+     if (e == 0) {
+     return 4; //110
+     } else {// e = 1
+     return 7; //111
+     }
+     }
+     }*/
+    
+    return r|w|e;
 }
 /*
  * Set up a segment at virtual address VADDR of size MEMSIZE. The
@@ -194,8 +285,8 @@ int as_set_permission(int r, int w, int e)  {
  */
 int
 as_define_region(struct addrspace *as, vaddr_t vaddr, size_t sz,
-		 int readable, int writeable, int executable)
-{
+                 int readable, int writeable, int executable)
+{ 
 	/*
 	 * Write this.
 	 */
@@ -208,7 +299,7 @@ as_define_region(struct addrspace *as, vaddr_t vaddr, size_t sz,
     vaddr &= PAGE_FRAME;
     
     // Align the region: the length
-    sz = (sz + PAGE_SIZE -1) &PAGE_FRAME
+    sz = (sz + PAGE_SIZE -1) &PAGE_FRAME;
     npages = sz / PAGE_SIZE;
     
     
@@ -217,13 +308,14 @@ as_define_region(struct addrspace *as, vaddr_t vaddr, size_t sz,
         as->as_vbase1 = vaddr;
         as ->as_npages1 = npages;
         
-        int i;
+        unsigned int i;
         struct page *p;
         
         for (i = 0; i < npages; i++)    {
             p = kmalloc(sizeof(struct page));
             p->vaddr = vaddr + i * PAGE_SIZE;
             p->permission = as_set_permission(readable,writeable,executable);
+            p->valid = 0;
             array_add(as->useg1, p);
         }
         return 0;
@@ -231,13 +323,14 @@ as_define_region(struct addrspace *as, vaddr_t vaddr, size_t sz,
         as->as_vbase2 = vaddr;
         as ->as_npages2 = npages;
         
-        int i;
+        unsigned int i;
         struct page *p;
         
         for (i = 0; i < npages; i++)    {
             p = kmalloc(sizeof(struct page));
             p->vaddr = vaddr + i * PAGE_SIZE;
-            p->permission = as_set_permission(readable,writeable,executable);
+            p->permission =readable|writeable|executable);
+            p->valid = 0;
             array_add(as->useg2, p);
         }
         
@@ -246,10 +339,10 @@ as_define_region(struct addrspace *as, vaddr_t vaddr, size_t sz,
     kprintf("addrspace.c: Warning: too many regions\n");
     return EUNIMP;
     
-
+    
 #else
     
-
+    
 	(void)as;
 	(void)vaddr;
 	(void)sz;
@@ -257,30 +350,25 @@ as_define_region(struct addrspace *as, vaddr_t vaddr, size_t sz,
 	(void)writeable;
 	(void)executable;
 	return EUNIMP;
-#endif /* _OPT_A3 */
+#endif /* _OPT_A3_ */
     
 }
 
 int
 as_prepare_load(struct addrspace *as)
 {
-	/*
-	 * Write this.
-	 */
 #if OPT_A3
+    
     assert(as->as_pbase1 == 0);
 	assert(as->as_pbase2 == 0);
 	assert(as->as_stackpbase == 0);
     
-    /*
-     
-     //REMOVING ALL THE NON-ERROR CHECKING STUFF FOR NOW, I DON'T KNOW WHAT TO DO.
-     
+    
 	as->as_pbase1 = getppages(as->as_npages1);
 	if (as->as_pbase1 == 0) {
 		return ENOMEM;
 	}
-    
+    assert((as->as_pbase1 & PAGE_FRAME) == as->as_pbase1);
 	as->as_pbase2 = getppages(as->as_npages2);
 	if (as->as_pbase2 == 0) {
 		return ENOMEM;
@@ -290,13 +378,16 @@ as_prepare_load(struct addrspace *as)
 	if (as->as_stackpbase == 0) {
 		return ENOMEM;
 	}
-    */
+    
 	return 0;
 #else
-
+	/*
+	 * Write this.
+	 */
+    
 	(void)as;
 	return 0;
-#endif /* _OPT_A3 */
+#endif /*_OPT_A3_*/
 }
 
 int
@@ -313,7 +404,7 @@ as_complete_load(struct addrspace *as)
 #else
 	(void)as;
 	return 0;
-#endif /* _OPT_A3 */
+#endif /* _OPT_A3_ */
 }
 
 int
@@ -325,18 +416,18 @@ as_define_stack(struct addrspace *as, vaddr_t *stackptr)
 #if OPT_A3
     //don't know yet!!!
     int i;
-    struct page p;
+    struct page *p;
     
     for (i=0; i < DUMBVM_STACKPAGES; i++)   {
-                    //does DUMBVM_STACKPAGES still work? what else can we use? xD using the one in pt.c right now
+        //does DUMBVM_STACKPAGES still work? what else can we use? xD using the one in pt.c right now
         p=kmalloc(sizeof(struct page));
         p->vaddr = USERSTACK - i * PAGE_SIZE;//since we are going backwards
-                                
+        
         p->valid =0;
-        // ???? p->permission = 
+        p->permission = 0x7;
         array_add(as->usegs, p);
     }
-    as->as_stackpbase = p->vaddr; //MAY BE OFF BY ONE ADDRESS!!
+    
     *stackptr = USERSTACK;
     return 0;
 #else
@@ -346,6 +437,5 @@ as_define_stack(struct addrspace *as, vaddr_t *stackptr)
 	*stackptr = USERSTACK;
 	
 	return 0;
-#endif /* _OPT_A3 */
+#endif /* _OPT_A3_ */
 }
-

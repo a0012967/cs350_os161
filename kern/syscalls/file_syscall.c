@@ -15,7 +15,7 @@
 #include "opt-A2.h"
 #include "opt-dumbvm.h"
 #include <fileDescriptor.h>
-#include <file_syscall.h>
+
 /*write writes up to buflen bytes to the file specified by fd, at the location in the file specified by the current
  //seek position of the file, taking the data from the space pointed to by buf. The file must be open for writing.*/
 //Must ensure that we only allow one thread to do any of the syscalls

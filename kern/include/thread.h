@@ -9,6 +9,7 @@
 #include <machine/pcb.h>
 #include "opt-A2.h"
 #include <process.h>
+#include <addrspace.h>
 
 struct addrspace;
 
