@@ -46,27 +46,30 @@ struct coremap{
 struct lock* core_lock; // a lock to protect the page table
 
 
-static int coremap_size;
-static int pt_initialize = 0;
+int coremap_size;
+int pt_initialize;
 struct bitmap* core_map; //determines which pages are free and which are not
-static struct coremap* coremap;
+struct coremap* coremap;
 
 /*
  
  Swap stuff
  
  */
+ void coremap_insertpid(paddr_t pa,pid_t pid);
 struct lock *swap_lock;
 struct vnode *vswap;
-static struct coremap* swap_coremap;
-static int swap_init = 0;
-static int swap_coresize;
+struct coremap* swap_coremap;
+int swap_init;
+int swap_coresize;
 static struct bitmap* swap_map;
 
 void swap_initialize();
-void swapin(paddr_t paddr);
-void swapout(paddr_t paddr);
+void swapin(paddr_t paddr,paddr_t pa2);
+void swapout(paddr_t paddr,paddr_t pa2);
 void check_swap(paddr_t paddr);
+int coremap_find(paddr_t pa);
+extern paddr_t get_page();
 paddr_t pagefault_handler(paddr_t paddr);
 
 #endif
