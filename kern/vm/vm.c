@@ -79,12 +79,14 @@ void vm_bootstrap(){
         if(i<((freeaddr-firstaddr)/PAGE_SIZE)){
             
             coremap->used = 1;
+            coremap->flag = 0x1;//fixed
             
         }
         else{
             
             
             coremap->used =0;
+            coremap->flag =0;
             
             
         }
@@ -190,6 +192,11 @@ getppages(unsigned long npages)
      If we reached here, then it means we cannot find contigous block, i.e we need to swap stuff
      */
     
+    /*
+    paddr_t pa;
+    pa = page_algorithmn();
+    return pa;
+    */
     
     
     lock_release(core_lock);

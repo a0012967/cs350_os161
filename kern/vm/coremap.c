@@ -13,10 +13,6 @@
 #include <uio.h>
 #include "opt-A3.h"
 
-
-
-
-
 void swap_initialize(){
     
     assert(pt_initialize);
@@ -38,6 +34,37 @@ void swap_initialize(){
     kprintf("swap stuff ready\n");
     
 }
+
+
+
+void swapin(paddr_t candidate, paddr_t swapee){
+	
+	struct uio u_swap;
+	int offset = swapee % PAGE_SIZE;
+	mk_kuio(&u_swap, (void *)PADDR_TO_KVADDR(candidate),PAGE_SIZE,offset,UIO_READ);
+	swap_remove(swapee);
+	int result = VOP_READ(vswap, &u_swap);
+	if(result){
+		panic("Failed swapin\n");
+	}
+	
+}
+
+void swapout(paddr_t candidate,paddr_t swapee){
+	
+	
+	struct uio u_swap;
+	int offset = swapee % PAGE_SIZE;
+	mk_kuio(&u_swap, (void *)PADDR_TO_KVADDR(candidate),PAGE_SIZE,offset,UIO_WRITE);
+	swap_insert(swapee);
+	int result = VOP_WRITE(vswap, &u_swap);
+	if(result){
+		panic("Failed swapin\n");
+	}
+	
+}
+
+
 
 /*
  Used to modify the swamp
@@ -93,55 +120,6 @@ int coremap_find(paddr_t paddr){
     return 0;
     
 }
-
-paddr_t coremap_freepage(){
-    
-    assert(pt_initialize);
-    int i;
-    for(i =0;i<coremap_size;i++){
-        
-        if(!(coremap[i].used)){
-            return coremap[i].paddr;  
-        }
-    }
-    if(i>= coremap_size){
-        
-        kprintf("coremap_find: Physical Address given does not exists\n");
-        return -1;
-        
-    }
-    
-    
-}
-/*
- 
- Finds the index of a given paddr
- 
- */
-int coreswap_find(paddr_t paddr){
-    
-    assert(pt_initialize);
-    int i;
-    for(i =0;i<coremap_size;i++){
-        
-        if(swap_coremap[i].paddr == paddr){
-            return i;  
-        }
-    }
-    if(i>= coremap_size){
-        
-        kprintf("coremap_find: Physical Address given does not exists\n");
-        return -1;
-        
-    }
-    
-}
-
-/*
- 
- We use fifo to replace the frame that has been longest
- */
-
 paddr_t get_fifo_page(){
     kprintf("get_fifopage begin\n");
     
@@ -174,125 +152,16 @@ paddr_t get_fifo_page(){
     
 }
 
-void coremap_insertpid(paddr_t pa,pid_t pid){
-    int i;
-    for(i=0;i<coremap_size;i++){
-        
-        if(coremap[i].paddr == pa){
-            break;
-            
-        }
-        
-    }
-    
-    int len = coremap[i].len;
-    coremap[i].pid = pid;
-    
-}
-
-//aefhgjnfmklgjSRO{K
 /*
- 
- used for page_fault
- and kicking a page out
+ Page Algorithmn: Fifo
+ If this function is called then, we need to swap pages and stuff
+ We should still be in the critical section when this function is called 
+ so no need to acquire the lock
  */
-paddr_t get_page(unsigned long npages){
-	
-    
-	paddr_t pa;
-	pa = get_fifo_page();
-    kprintf("finished get_fifopage\n");
-    int i = get_free_page();
-    kprintf("get_page():get_free_page call\n");
-    assert(i >=0);
-    paddr_t swapee = coremap[i].paddr;
-	swapout(pa,swapee);
-    return pa;
-    
-}
-
-paddr_t alloc_onepage(){
-    /*int i = get_free_page();
-    assert(i >=0);
-     */
+paddr_t page_algorithmn(){
     paddr_t pa;
-    //paddr_t pa = getppages(1);
     
-    if(pa <= 0){
-        return 0;
-        
-    }
+    
+    
     return pa;
-  
-    
-    
 }
-
-int get_free_page(){
-    
-    int i;
-    for(i=0;i<coremap_size;i++){
-        
-        if(!(coremap[i].used)){
-            return i;
-        }
-        
-        
-    }
-    //error
-    return -1;
-}
-
-void coreswap_remove (paddr_t paddr) {
-    int i = coremap_find(paddr);
-	int spl=splhigh();
-	swap_coremap[i].paddr = 0;
-	swap_coremap[i].pid = 0;	
-    
-	splx(spl);
-	return 0;
-}
-
-// we want to swap swapee with candidate
-void swapin(paddr_t candidate, paddr_t swapee){
-	
-	struct uio u_swap;
-	int offset = swapee % PAGE_SIZE;
-	mk_kuio(&u_swap, (void *)PADDR_TO_KVADDR(candidate),PAGE_SIZE,offset,UIO_READ);
-	swap_remove(swapee);
-	int result = VOP_READ(vswap, &u_swap);
-	if(result){
-		panic("Failed swapin\n");
-	}
-	
-}
-
-void swapout(paddr_t candidate,paddr_t swapee){
-	
-	
-	struct uio u_swap;
-	int offset = swapee % PAGE_SIZE;
-	mk_kuio(&u_swap, (void *)PADDR_TO_KVADDR(candidate),PAGE_SIZE,offset,UIO_WRITE);
-	swap_insert(swapee);
-	int result = VOP_WRITE(vswap, &u_swap);
-	if(result){
-		panic("Failed swapin\n");
-	}
-	
-}
-/*
- 
- Page fault: We need to swap
- 
- */
-paddr_t pagefault_handler(paddr_t pa){
-    //int index = get_free_page;
-    paddr_t paddr = get_page(1);
-    swapin(paddr,pa);
-    int i = coremap_find(pa);
-    assert(i != -1);
-    coremap_insertpid(paddr,swap_coremap[i].pid);
-    
-    return paddr;
-}
-

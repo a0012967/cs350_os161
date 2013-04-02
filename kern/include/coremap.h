@@ -35,6 +35,10 @@ struct coremap{
     paddr_t paddr;
     //int swapped;
     int used;
+    /*
+     fixed = 0x1
+     */
+    int flag;  
     int len; // length of the block
     pid_t pid;
     //time stamp
