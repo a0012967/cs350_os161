@@ -8,6 +8,7 @@
 #include <vm.h>
 #include <pt.h>
 #include <coremap.h>
+#include <clock.h>
 #include <machine/tlb.h>
 #include <machine/spl.h>
 #include <vm-tlb.h>
@@ -134,6 +135,8 @@ getppages(unsigned long npages)
     }
     lock_acquire(core_lock);
     int i,j;
+    time_t secs;
+    u_int32_t nano;
     unsigned long count_pages;
     //kprintf("getppages: about to count coremap\n");
     for(i = 0; i< coremap_size; i++){
@@ -141,12 +144,18 @@ getppages(unsigned long npages)
         if(!(coremap[i].used)){
             
             count_pages++;
+            
             if(count_pages == npages){
-                
+                gettime(&secs,&nano);
             	coremap[j].len = npages;
-                // assert(curthread != NULL);
-                // assert(curthread->t_process != NULL);
-                // coremap[j].pid = curthread->t_process->PID;
+                coremap[j].secs = secs;
+                coremap[j].nano = nano;
+                
+                //assert(curthread != NULL);
+                //assert(curthread->t_process != NULL);
+                if(curthread != NULL && curthread->t_process !=NULL){
+                coremap[j].pid = curthread->t_process->PID;
+                }
                 break;
             }
         }
@@ -159,6 +168,8 @@ getppages(unsigned long npages)
     
     if(count_pages == npages){
         // int j;
+       // kprintf("coremap: j: %d secs: %ld nano: %ld\n",j,(long)coremap[j].secs,(long )coremap[j].nano);
+        
         for(j =i - npages +1;j<(i+1);j++){
             //coremap[j].pid = curthread->t_process->PID;
             coremap[j].used= 1;
@@ -173,6 +184,14 @@ getppages(unsigned long npages)
         return coremap[i-npages+1].paddr;
         
     }
+    
+    /*
+     
+     If we reached here, then it means we cannot find contigous block, i.e we need to swap stuff
+     */
+    
+    
+    
     lock_release(core_lock);
     return 0; //if not successful
     
