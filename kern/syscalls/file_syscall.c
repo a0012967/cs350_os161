@@ -201,7 +201,7 @@ void _exit(int exitcode, int * retval)
     
     if (curthread->t_process->parent == NULL) {
         //I'm a root, just exit
-        exit_process(curthread->t_process->PID, exitcode);
+        //exit_process(curthread->t_process->PID, exitcode);
         
     } else { // I'm a child
         

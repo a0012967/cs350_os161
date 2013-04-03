@@ -451,11 +451,14 @@ vm_fault(int faulttype, vaddr_t faultaddress)
     } else if (faultaddress >= vbase2 && faultaddress < vtop2)    { // look in data
         pg = (struct page *)array_getguy(as->useg2, (faultaddress-vbase2)/PAGE_SIZE);
         segment =1;
+        first_load = 0;
     } else if (faultaddress >= stackbase && faultaddress < stacktop) { // look in stack
         pg = (struct page *)array_getguy(as->usegs, ((faultaddress - stackbase)/PAGE_SIZE));
         segment = 2;
+        first_load = 0;
     } else {
         segment = -1;
+        return EFAULT;
     }
     
     //---
@@ -546,7 +549,7 @@ vm_fault(int faulttype, vaddr_t faultaddress)
 
                     if (first_load && wr_to && faultaddress >= vbase1 && faultaddress < vtop1) {
                         elo = paddr | TLBLO_DIRTY | TLBLO_VALID;
-                        first_load = 0;
+                        //first_load = 0;
                     }
                     else {
                         if (faultaddress >= vbase1 && faultaddress < vtop1){
@@ -580,7 +583,7 @@ vm_fault(int faulttype, vaddr_t faultaddress)
             
             if (first_load && wr_to && faultaddress >= vbase1 && faultaddress < vtop1) {
                 elo = paddr | TLBLO_DIRTY | TLBLO_VALID;
-                first_load = 0;
+                //first_load = 0;
             }
             else {
                 if (faultaddress >= vbase1 && faultaddress < vtop1){
