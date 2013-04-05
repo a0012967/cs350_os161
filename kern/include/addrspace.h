@@ -5,6 +5,7 @@
 #include <pt.h>
 #include "opt-dumbvm.h"
 #include "opt-A3.h"
+#include <array.h>
 
 #if OPT_A3
 //#include <array.h>
