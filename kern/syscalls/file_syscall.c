@@ -7,6 +7,7 @@
 #include <kern/stat.h>
 #include <uio.h>
 #include <vfs.h>
+#include <vnode.h>
 #include <kern/unistd.h>
 #include <vnode.h>
 #include <curthread.h>
@@ -208,7 +209,7 @@ void _exit(int exitcode, int * retval)
         if (exit_process(curthread->t_process->PID, exitcode) != 0) {
             *retval = -1;
             lock_release(proc_lock);
-            
+            vfs_close(curthread->t_vmspace->v);
             thread_exit();
         }
         
@@ -223,7 +224,7 @@ void _exit(int exitcode, int * retval)
     
     //*retval = 0;
     lock_release(proc_lock);
-    
+    vfs_close(curthread->t_vmspace->v);
     thread_exit();
     
     

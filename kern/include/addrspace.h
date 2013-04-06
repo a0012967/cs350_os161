@@ -6,9 +6,6 @@
 #include "opt-dumbvm.h"
 #include "opt-A3.h"
 
-#if OPT_A3
-//#include <array.h>
-#endif
 struct vnode;
 
 /* 
@@ -28,22 +25,39 @@ struct addrspace {
 	size_t as_npages2;
 	paddr_t as_stackpbase;
 #else     
-    //OPT_A3
-    paddr_t as_page_dir; 
-        
+
     vaddr_t as_vbase1;
 	//paddr_t as_pbase1;   // Yi: don't need pbase anymore since memory is not continugous
 	size_t as_npages1;
+        size_t filesz1;
 	vaddr_t as_vbase2;
+        int flag1;
 	//paddr_t as_pbase2;
 	size_t as_npages2;
+        size_t filesz2;
+        int flag2;
 	//paddr_t as_stackpbase;
+        size_t filesz3;
     
     
     struct array *useg1;    //code
+    off_t off_1;
     struct array *useg2;    //data
+    off_t off_2;
     struct array *usegs;    //stack
 
+    struct vnode *v;
+    off_t offset;
+    size_t filesize;
+    int p_flags;
+    int num_segs;
+    int entsize;
+    
+    int done;
+    vaddr_t entrypoint;
+    vaddr_t stackpointer;
+    char* progname;
+    
 #endif
 };
 
@@ -87,11 +101,11 @@ void              as_activate(struct addrspace *);
 void              as_destroy(struct addrspace *);
 
 int               as_define_region(struct addrspace *as, 
-				   vaddr_t vaddr, size_t sz,
+				   vaddr_t vaddr, size_t sz, size_t f_sz,
 				   int readable, 
 				   int writeable,
 				   int executable);
-int		  as_prepare_load(struct addrspace *as);
+int		  as_prepare_load(struct addrspace *as, int n_segs);
 int		  as_complete_load(struct addrspace *as);
 int               as_define_stack(struct addrspace *as, vaddr_t *initstackptr);
 

@@ -63,7 +63,7 @@ as_create(void)
     //as->tlb = kmalloc(sizeof(struct tlb));   
     //as->tlb->tlb_lock = lock_create("tlb lock");
     //as->tlb->next_victim = 0;
-    
+    as->done = 0;
 #endif
     
 	return as;
@@ -87,11 +87,12 @@ as_copy(struct addrspace *old, struct addrspace **ret)
 	new->as_vbase2 = old->as_vbase2;
 	new->as_npages2 = old->as_npages2;
     
+        /*
 	if (as_prepare_load(new)) {
 		as_destroy(new);
 		return ENOMEM;
 	}
-    
+    */
 	//assert(new->as_pbase1 != 0);
 	//assert(new->as_pbase2 != 0);
 	//assert(new->as_stackpbase != 0);
@@ -177,7 +178,7 @@ as_destroy(struct addrspace *as)
 
 void
 as_activate(struct addrspace *as)
-{
+{//kprintf("in as_activate\n");
 #if OPT_A3
 	/*
 	 * Write this.
@@ -190,13 +191,13 @@ as_activate(struct addrspace *as)
     
 	// invalidate entries in TLB only if address spaces are different
     
-    //if (as != curthread->t_vmspace)
-    //{
+    if (as != curthread->t_vmspace)
+    {
         vmstats_inc(VMSTAT_TLB_INVALIDATE); /* STATS */
         for (i=0; i<NUM_TLB; i++) {
             TLB_Write(TLBHI_INVALID(i), TLBLO_INVALID(), i);
         }
-    //}
+    }
     
 	splx(spl);
 #else
@@ -215,7 +216,7 @@ as_activate(struct addrspace *as)
  * want to implement them.
  */
 int
-as_define_region(struct addrspace *as, vaddr_t vaddr, size_t sz,
+as_define_region(struct addrspace *as, vaddr_t vaddr, size_t sz, size_t f_sz,
                  int readable, int writeable, int executable)
 { 
 	/*
@@ -237,7 +238,9 @@ as_define_region(struct addrspace *as, vaddr_t vaddr, size_t sz,
     
     if (as->as_vbase1 == 0) { // code segment useg1
         as->as_vbase1 = vaddr;
-        as ->as_npages1 = npages;
+        as->as_npages1 = npages;
+        as->filesz1 = f_sz;
+        as->flag1 = readable|writeable|executable;
         
         unsigned int i;
         struct page *p;
@@ -253,6 +256,8 @@ as_define_region(struct addrspace *as, vaddr_t vaddr, size_t sz,
     } else if (as->as_vbase2 == 0) { // data segment useg2
         as->as_vbase2 = vaddr;
         as ->as_npages2 = npages;
+        as->filesz2 = f_sz;
+        as->flag2 = readable|writeable|executable;
         
         unsigned int i;
         struct page *p;
@@ -286,7 +291,7 @@ as_define_region(struct addrspace *as, vaddr_t vaddr, size_t sz,
 }
 
 int
-as_prepare_load(struct addrspace *as)
+as_prepare_load(struct addrspace *as, int n_segs)
 {
 #if OPT_A3
     
@@ -332,7 +337,8 @@ as_complete_load(struct addrspace *as)
     
 #if OPT_A3
     //don't know yet!!!
-    (void)as;
+    //(void)as;
+    as->done = 1;
 	return 0;
 #else
 	(void)as;

@@ -1,6 +1,8 @@
 #include <types.h>
 #include <kern/errno.h>
 #include <lib.h>
+#include <uio.h>
+#include <elf.h>
 #include <synch.h>
 #include <thread.h>
 #include <curthread.h>
@@ -15,6 +17,7 @@
 #include <syscall.h>
 #include <addrspace.h>
 #include <uw-vmstats.h>
+#include <vnode.h>
 #include "opt-A3.h"
 
 
@@ -39,6 +42,8 @@
 #define RWE 0x7
 
 int first_load = 1;
+int dup = 0;
+int count_dup = 0;
 
 void vm_bootstrap(){
     
@@ -378,6 +383,68 @@ free_kpages(vaddr_t addr)
     lock_release(core_lock);
 }
 
+
+static
+int
+load_each_segment(struct vnode *v, off_t offset, vaddr_t vaddr, paddr_t paddr, 
+	     size_t memsize, size_t filesize,
+	     int is_executable, int first_read)
+{
+	struct uio u;
+	int result;
+	size_t fillamt;
+        int spl;
+
+	if (filesize > memsize) {
+		kprintf("ELF: warning: segment filesize > segment memsize\n");
+		filesize = memsize;
+	}
+        
+	DEBUG(DB_EXEC, "ELF: Loading %lu bytes to 0x%lx\n", 
+	      (unsigned long) filesize, (unsigned long) vaddr);
+
+	//u.uio_iovec.iov_ubase = (userptr_t)vaddr;
+        if(first_read == 0){
+            
+            u.uio_iovec.iov_ubase = (userptr_t)vaddr;
+            u.uio_iovec.iov_len = memsize;   // length of the memory space
+            u.uio_resid = filesize;          // amount to actually read
+            u.uio_offset = offset;
+            u.uio_segflg = is_executable ? UIO_USERISPACE : UIO_USERSPACE;
+            u.uio_rw = UIO_READ;
+            u.uio_space = curthread->t_vmspace;
+
+        }else{
+            
+            return 0;
+        }
+	
+
+        result = VOP_READ(v, &u);
+        //lock_acquire(tlb.tlb_lock);
+	if (result) {
+		return result;
+	}
+	if (u.uio_resid != 0) {
+		/* short read; problem with executable? */
+		kprintf("ELF: short read on segment - file truncated?\n");
+		return ENOEXEC;
+	}
+
+	/* Fill the rest of the memory space (if any) with zeros */
+	fillamt = memsize - filesize;
+	if (fillamt > 0) {
+		DEBUG(DB_EXEC, "ELF: Zero-filling %lu more bytes\n", 
+		      (unsigned long) fillamt);
+		u.uio_resid += fillamt;
+		result = uiomovezeros(fillamt, &u);
+	}
+	return result;
+}
+
+int first_read = 0;
+vaddr_t first_v = 0;
+
 int
 vm_fault(int faulttype, vaddr_t faultaddress)
 {
@@ -387,11 +454,21 @@ vm_fault(int faulttype, vaddr_t faultaddress)
 	u_int32_t ehi, elo;
 	struct addrspace *as = curthread->t_vmspace;
 	int spl;
+        int result;
+        int probe;
  
+        if (first_v != faultaddress)
+        {
+            first_v = faultaddress;
+            first_read = 0;
+        } else {
+            first_read = 1;
+        }
+        
     int p_i;
     
-	//spl = splhigh();
-    lock_acquire(tlb.tlb_lock);
+	spl = splhigh();
+    
     
 	faultaddress &= PAGE_FRAME;
     
@@ -407,20 +484,6 @@ vm_fault(int faulttype, vaddr_t faultaddress)
 		return EFAULT;
 	}
     
-	/* Assert that the address space has been set up properly. 
-	assert(as->as_vbase1 != 0);
-	assert(as->as_pbase1 != 0);
-	assert(as->as_npages1 != 0);
-	assert(as->as_vbase2 != 0);
-	assert(as->as_pbase2 != 0);
-	assert(as->as_npages2 != 0);
-	assert(as->as_stackpbase != 0);
-	assert((as->as_vbase1 & PAGE_FRAME) == as->as_vbase1);
-	assert((as->as_pbase1 & PAGE_FRAME) == as->as_pbase1);
-	assert((as->as_vbase2 & PAGE_FRAME) == as->as_vbase2);
-	assert((as->as_pbase2 & PAGE_FRAME) == as->as_pbase2);
-	assert((as->as_stackpbase & PAGE_FRAME) == as->as_stackpbase);
-    */
 	vbase1 = as->as_vbase1;
 	vtop1 = vbase1 + as->as_npages1 * PAGE_SIZE;
 	vbase2 = as->as_vbase2;
@@ -428,51 +491,58 @@ vm_fault(int faulttype, vaddr_t faultaddress)
 	stackbase = USERSTACK - DUMBVM_STACKPAGES * PAGE_SIZE;
 	stacktop = USERSTACK;
     
-
-    
-	/* make sure it's page-aligned */
-	//assert((paddr & PAGE_FRAME)==paddr);
-    
     
     //---Yi: need to find segment, then page. NOTE: THE INDEX MAY BE OFF BY +-1 because of the =
     
     p_i = faultaddress/PAGE_SIZE;
     
     int segment; // -1invalid 0code 1data 2stack
+    size_t seg_size;
+    size_t f_size;
+    off_t offset;
+    int flags;
     
     struct page *pg;
-    
     if (p_i < 0)    {
         panic("addrspace: invalid page table index\n"); // need exception handling
         
     } else if (faultaddress >= vbase1 && faultaddress < vtop1)   { // look in code
         pg = (struct page *)array_getguy(as->useg1, (faultaddress-vbase1)/PAGE_SIZE);
         segment=0;
+        seg_size=as->as_npages1;
+        f_size = as->filesz1;
+        offset = as->off_1;
+        flags=as->flag1;
     } else if (faultaddress >= vbase2 && faultaddress < vtop2)    { // look in data
         pg = (struct page *)array_getguy(as->useg2, (faultaddress-vbase2)/PAGE_SIZE);
         segment =1;
+        seg_size=as->as_npages2;
+        f_size = as->filesz2;
+        offset = as->off_2;
+        flags=as->flag2;
         first_load = 0;
     } else if (faultaddress >= stackbase && faultaddress < stacktop) { // look in stack
         pg = (struct page *)array_getguy(as->usegs, ((faultaddress - stackbase)/PAGE_SIZE));
         segment = 2;
+        seg_size=DUMBVM_STACKPAGES;
+        f_size = as->filesz3;
         first_load = 0;
+        flags=RWE;
     } else {
         segment = -1;
         return EFAULT;
     }
-    
+        
     //---
    
     int wr_to = 0;
+    int err; // useless for now
 
     //kprintf("Fault %d, Permission %x, Addr %x\n", faulttype,pg->permission,faultaddress );
 	switch (faulttype) {
 	    case VM_FAULT_READONLY:
                 
-                // we double check that the user has indeed permission to write to page
-                
-                    lock_release(tlb.tlb_lock);
-                    int err; // useless for now
+                    
                     err = EFAULT;
                     _exit(0, &err);   
                 
@@ -483,42 +553,83 @@ vm_fault(int faulttype, vaddr_t faultaddress)
                 {
                     pg->valid = 1;
                     pg->vaddr = faultaddress;
-                    paddr = getppages(1);
-                    if (paddr == NULL)
-                    {
-                        lock_release(tlb.tlb_lock);
-                        return ENOMEM;
+                    
+                    if(f_size != 0) {
+                        paddr = getppages(seg_size);
+                        if (paddr == NULL)
+                        {
+                            return ENOMEM;
+
+                        }
                         
-                    }
-                    pg->paddr = paddr;
-                        
+                        pg->paddr = paddr;
+                        splx(spl);
+                            result = load_each_segment(as->v, offset, faultaddress, paddr, seg_size*PAGE_SIZE, f_size, flags & E_ONLY, first_read);
+                        spl = splhigh();
+
+                            if (result) {
+                                    return result;
+                            }
+
+                    
+                    } else {
+                        paddr = getppages(1);
+                        if (paddr == NULL)
+                        {
+                            return ENOMEM;
+
+                        }
+                    }             
+                    
+                             pg->paddr = paddr;               
                     _vmstats_inc(VMSTAT_PAGE_FAULT_ZERO); /* STATS */
+
                 }
                 else
                 {
+                    wr_to = 1;
                     paddr = pg->paddr;
+                    
                     _vmstats_inc(VMSTAT_TLB_RELOAD); /* STATS */
                 }
+                
+                
             break;
             
 	    case VM_FAULT_WRITE:
-                /*
-                if (pg->permission == R_ONLY || pg->permission == RE_ONLY) {
-                    splx(spl);kprintf("data2 %x\n",pg->permission);
-                    int err; // useless for now
-                    err = EFAULT;
-                    _exit(0, &err);  
-                }*/
+                
                 wr_to = 1;
+                first_read = 1;
                 if (!pg->valid)
                 {
                     pg->valid = 1;
                     pg->vaddr = faultaddress;
-                    paddr = getppages(1);
-                    if (paddr == NULL)
-                    {
-                        lock_release(tlb.tlb_lock);
-                        return ENOMEM;
+                    
+                    
+                    if(f_size != 0) {
+                        paddr = getppages(seg_size);
+                        if (paddr == NULL)
+                        {
+                            return ENOMEM;
+
+                        }
+                        if (segment != 2){
+                            splx(spl);
+
+                            result = load_each_segment(as->v, offset, faultaddress, paddr, seg_size*PAGE_SIZE, f_size, flags & E_ONLY, first_read);
+                            spl = splhigh();
+                            if (result) {
+                                lock_release(tlb.tlb_lock);
+                                   return result;
+                            }
+                        }
+                    } else {
+                        paddr = getppages(1);
+                        if (paddr == NULL)
+                        {
+                            return ENOMEM;
+
+                        }
                     }
                     pg->paddr = paddr;
 
@@ -529,31 +640,35 @@ vm_fault(int faulttype, vaddr_t faultaddress)
                 {
                     paddr = pg->paddr;
                     _vmstats_inc(VMSTAT_TLB_RELOAD); /* STATS */
+                      
                 }
 		break;
 	    default:
-		//splx(spl);
-                lock_release(tlb.tlb_lock);
 		return EINVAL;
 	}
 
 	_vmstats_inc(VMSTAT_TLB_FAULT);
+        splx(spl);
 
+if (wr_to == 1 || (segment == 2)){
+    
+        lock_acquire(tlb.tlb_lock);
         
             for (i=0; i<NUM_TLB; i++) {
+                
                     TLB_Read(&ehi, &elo, i);
                     if (elo & TLBLO_VALID) {
                             continue;
                     }
                     ehi = faultaddress;
 
-                    if (first_load && wr_to && faultaddress >= vbase1 && faultaddress < vtop1) {
+                    if (count_dup == 1 && faultaddress >= vbase1 && faultaddress < vtop1) {
                         elo = paddr | TLBLO_DIRTY | TLBLO_VALID;
                         //first_load = 0;
                     }
                     else {
                         if (faultaddress >= vbase1 && faultaddress < vtop1){
-                             elo = paddr | TLBLO_VALID;
+                             elo = paddr | TLBLO_DIRTY | TLBLO_VALID;
                         }else{
                             elo = paddr | TLBLO_DIRTY | TLBLO_VALID;
                         }
@@ -561,16 +676,13 @@ vm_fault(int faulttype, vaddr_t faultaddress)
 
                     DEBUG(DB_VM, "dumbvm: 0x%x -> 0x%x\n", faultaddress, paddr);
                     TLB_Write(ehi, elo, i);
+                    
                     //splx(spl);
             lock_release(tlb.tlb_lock);
-
-                    vmstats_inc(VMSTAT_TLB_FAULT_FREE); /* STATS */
+            vmstats_inc(VMSTAT_TLB_FAULT_FREE); /* STATS */
                     return 0;
             }
 
-        // need a replacement algorithm
-            //kprintf("dumbvm: Ran out of TLB entries - cannot handle page fault\n");
-            //splx(spl);
             int victim = tlb_get_rr_victim();
             //kprintf("vm fault: got our victim, %d \n",victim);
             if (victim < 0 || victim >= NUM_TLB)
@@ -587,17 +699,20 @@ vm_fault(int faulttype, vaddr_t faultaddress)
             }
             else {
                 if (faultaddress >= vbase1 && faultaddress < vtop1){
-                        elo = paddr | TLBLO_VALID;
+                        elo = paddr | TLBLO_DIRTY | TLBLO_VALID;
                 }else{
                         elo = paddr | TLBLO_DIRTY | TLBLO_VALID;
                 }
             }
 
             TLB_Write(ehi, elo, victim);
-            //splx(spl);
-
-            vmstats_inc(VMSTAT_TLB_FAULT_REPLACE); /* STATS */
+            
+            
             lock_release(tlb.tlb_lock);
+
+
+            vmstats_inc(VMSTAT_TLB_FAULT_REPLACE); /* STATS *///
+}
                 return 0;
 
 }

@@ -38,50 +38,48 @@ calc_align_length(char *argv)
 int
 runprogram(char *progname, char** argv, int argc)
 {
-	struct vnode *v;
-	vaddr_t entrypoint, stackptr;
-	int result;
+struct vnode *v;
+vaddr_t entrypoint, stackptr;
+int result;
 
-	/* Open the file. */
-	result = vfs_open(progname, O_RDONLY, &v);
-	if (result) {
-		return result;
-	}
+/* Open the file. */
+result = vfs_open(progname, O_RDONLY, &v);
+if (result) {
+return result;
+}
 
-	/* We should be a new thread. */
-	assert(curthread->t_vmspace == NULL);
+/* We should be a new thread. */
+assert(curthread->t_vmspace == NULL);
 
-	/* Create a new address space. */
-	curthread->t_vmspace = as_create();
-	if (curthread->t_vmspace==NULL) {
-		vfs_close(v);
-		return ENOMEM;
-	}
+/* Create a new address space. */
+curthread->t_vmspace = as_create();
+if (curthread->t_vmspace==NULL) {
+vfs_close(v);
+return ENOMEM;
+}
 
-	/* Activate it. */
-	as_activate(curthread->t_vmspace);
+/* Activate it. */
+as_activate(curthread->t_vmspace);
+curthread->t_vmspace->progname = progname;
+/* Load the executable. */
+result = load_elf(v, &entrypoint);
+if (result) {
+/* thread_exit destroys curthread->t_vmspace */
+vfs_close(v);
+return result;
+}
 
-	/* Load the executable. */
-	result = load_elf(v, &entrypoint);
-	if (result) {
-		/* thread_exit destroys curthread->t_vmspace */
-		vfs_close(v);
-		return result;
-	}
+/* Done with the file now. */
+//vfs_close(v);
 
-	/* Done with the file now. */
-	vfs_close(v);
+/* Define the user stack in the address space */
+result = as_define_stack(curthread->t_vmspace, &stackptr);
+if (result) {
+/* thread_exit destroys curthread->t_vmspace */
+return result;
+}
 
-	/* Define the user stack in the address space */
-	result = as_define_stack(curthread->t_vmspace, &stackptr);
-	if (result) {
-		/* thread_exit destroys curthread->t_vmspace */
-		return result;
-	}
-#if OPT_A2
-    
-    
-    //Initialize the Process & put it onto proctable
+//Initialize the Process & put it onto proctable
     lock_acquire(proc_lock);
     struct process *new_processs = add_process_new();
     if (new_processs == NULL) {
@@ -98,65 +96,11 @@ runprogram(char *progname, char** argv, int argc)
     
     lock_release(proc_lock);
     
-    //Argument passing
-        vaddr_t initialptr = stackptr;
-        unsigned int i;
-        unsigned int j; // i reversed index
-        int err;
-        
-        unsigned int alignlen; // length of argument with correct mod4 alignment
-        
-        //if (argc > 1)
-        //{
-            for (i = 0; i < argc; i++) // copyout the array values
-            {
-                j = argc-(i+1);
+/* Warp to user mode. */
+md_usermode(0 /*argc*/, NULL /*userspace addr of argv*/,
+stackptr, entrypoint);
 
-                alignlen = calc_align_length(argv[j]);
-
-                stackptr = stackptr-alignlen;
-
-                if ((err = copyoutstr(argv[j], stackptr, strlen(argv[j])+1, &alignlen)) != 0)
-                    kprintf("ERROR copyoutstr %d\n", err);
-
-                argv[j] = stackptr; // fill argv with actual user space ptr
-            }
-
-            argv[argc] = NULL; // ensure last argument point to NULL
-            
-            for (i = 0; i <= argc; i++) // copyout the array addresses
-            {
-                j = argc-i;
-                stackptr = stackptr-4;
-
-                if ((err = copyout(&argv[j], stackptr, 4)) != 0)
-                    kprintf("ERROR copyout %d\n", err);
-
-            }
-            
-            /* Warp to user mode. */
-            md_usermode(argc /*argc*/, stackptr /*userspace addr of argv*/,
-                        stackptr, entrypoint);
-        //}
-        //else
-        //{
-            /* Warp to user mode. */
-            //md_usermode(1 /*argc*/, NULL /*userspace addr of argv*/,
-              //          stackptr, entrypoint);
-        //}
-	
-	/* md_usermode does not return */
-	panic("md_usermode returned\n");
-
-    
-
-#else
-	md_usermode(0 /*argc*/, NULL /*userspace addr of argv*/,stackptr, entrypoint);
-	
-	/* md_usermode does not return */
-#endif
-    panic("md_usermode returned\n");
-
-	return EINVAL;
+/* md_usermode does not return */
+panic("md_usermode returned\n");
+return EINVAL;
 }
-

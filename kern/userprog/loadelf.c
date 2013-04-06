@@ -174,21 +174,28 @@ load_elf(struct vnode *v, vaddr_t *entrypoint)
 				ph.p_type);
 			return ENOEXEC;
 		}
-
+                kprintf("vaddr %x, i: %d\n",ph.p_vaddr, i);
 		result = as_define_region(curthread->t_vmspace,
-					  ph.p_vaddr, ph.p_memsz,
+					  ph.p_vaddr, ph.p_memsz, ph.p_filesz,
 					  ph.p_flags & PF_R,
 					  ph.p_flags & PF_W,
-					  ph.p_flags & PF_X);
+					  ph.p_flags & PF_X);               
 		if (result) {
 			return result;
 		}
 	}
 
-	result = as_prepare_load(curthread->t_vmspace);
+	result = as_prepare_load(curthread->t_vmspace, eh.e_phnum);
 	if (result) {
 		return result;
 	}
+
+        curthread->t_vmspace->num_segs = eh.e_phnum;
+        curthread->t_vmspace->offset = eh.e_phoff;
+        kprintf("offset: %d\n", curthread->t_vmspace->offset);
+        curthread->t_vmspace->entsize = eh.e_phentsize;
+        curthread->t_vmspace->v = v;
+        curthread->t_vmspace->entrypoint = eh.e_entry;
 
 	/*
 	 * Now actually load each segment.
@@ -219,15 +226,31 @@ load_elf(struct vnode *v, vaddr_t *entrypoint)
 				ph.p_type);
 			return ENOEXEC;
 		}
-
+                kprintf("vaddr: %x, off: %d, filesz: %d\n", ph.p_vaddr, ph.p_offset, ph.p_filesz);
+                if (i == 1) {
+                    curthread->t_vmspace->off_1 = ph.p_offset;
+                    curthread->t_vmspace->filesz1 = ph.p_filesz;
+                }
+                else if (i == 2) {
+                    curthread->t_vmspace->off_2 = ph.p_offset;
+                    curthread->t_vmspace->filesz2 = ph.p_filesz;
+                }
+                //paddr = getppages();
+                /*
+                kprintf("vaddr is %x %d %d\n",ph.p_vaddr, eh.e_phnum, i);
+                if (i == 2) {
 		result = load_segment(v, ph.p_offset, ph.p_vaddr, 
 				      ph.p_memsz, ph.p_filesz,
 				      ph.p_flags & PF_X);
 		if (result) {
 			return result;
 		}
+                }*/
+                
 	}
 
+
+                
 	result = as_complete_load(curthread->t_vmspace);
 	if (result) {
 		return result;
