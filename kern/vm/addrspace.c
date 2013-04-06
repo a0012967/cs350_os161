@@ -245,6 +245,8 @@ as_define_region(struct addrspace *as, vaddr_t vaddr, size_t sz, size_t f_sz,
         unsigned int i;
         struct page *p;
         
+        array_preallocate(as->useg1, sz);// protect our segement
+        
         for (i = 0; i < npages; i++)    {
             p = kmalloc(sizeof(struct page));
             p->vaddr = vaddr + i * PAGE_SIZE;
@@ -261,6 +263,8 @@ as_define_region(struct addrspace *as, vaddr_t vaddr, size_t sz, size_t f_sz,
         
         unsigned int i;
         struct page *p;
+        
+        array_preallocate(as->useg2, sz);// protect our segement
         
         for (i = 0; i < npages; i++)    {
             p = kmalloc(sizeof(struct page));
@@ -356,6 +360,8 @@ as_define_stack(struct addrspace *as, vaddr_t *stackptr)
     //don't know yet!!!
     int i;
     struct page *p;
+    
+    array_preallocate(as->usegs, DUMBVM_STACKPAGES);// protect our segement
     
     for (i=0; i < DUMBVM_STACKPAGES; i++)   {
         //does DUMBVM_STACKPAGES still work? what else can we use? xD using the one in pt.c right now
