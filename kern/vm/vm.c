@@ -403,7 +403,6 @@ load_each_segment(struct vnode *v, off_t offset, vaddr_t vaddr, paddr_t paddr,
 	DEBUG(DB_EXEC, "ELF: Loading %lu bytes to 0x%lx\n", 
 	      (unsigned long) filesize, (unsigned long) vaddr);
 
-	//u.uio_iovec.iov_ubase = (userptr_t)vaddr;
         if(first_read == 0){
             
             u.uio_iovec.iov_ubase = (userptr_t)vaddr;
@@ -420,7 +419,7 @@ load_each_segment(struct vnode *v, off_t offset, vaddr_t vaddr, paddr_t paddr,
         }
 	
         result = VOP_READ(v, &u);
-        //lock_acquire(tlb.tlb_lock);
+        
 	if (result) {
         
 		return result;
@@ -431,7 +430,7 @@ load_each_segment(struct vnode *v, off_t offset, vaddr_t vaddr, paddr_t paddr,
 		return ENOEXEC;
 	}
 
-	 /*Fill the rest of the memory space (if any) with zeros */
+	 /* Fill the rest of the memory space (if any) with zeros */
 	fillamt = memsize - filesize;
 	if (fillamt > 0) {
 		DEBUG(DB_EXEC, "ELF: Zero-filling %lu more bytes\n", 
@@ -445,6 +444,8 @@ load_each_segment(struct vnode *v, off_t offset, vaddr_t vaddr, paddr_t paddr,
 int first_read = 0;
 int second_write = 0;
 vaddr_t first_v = 0;
+int first_code_read = 0;
+int code_write_nread = 0;
 
 int
 vm_fault(int faulttype, vaddr_t faultaddress)
@@ -492,9 +493,6 @@ vm_fault(int faulttype, vaddr_t faultaddress)
 	stackbase = USERSTACK - DUMBVM_STACKPAGES * PAGE_SIZE;
 	stacktop = USERSTACK;
     
-    
-    //---Yi: need to find segment, then page. NOTE: THE INDEX MAY BE OFF BY +-1 because of the =
-    
     p_i = faultaddress/PAGE_SIZE;
     
     int segment; // -1invalid 0code 1data 2stack
@@ -514,6 +512,7 @@ vm_fault(int faulttype, vaddr_t faultaddress)
         f_size = as->filesz1;
         offset = as->off_1;
         flags=as->flag1;
+            
     } else if (faultaddress >= vbase2 && faultaddress < vtop2)    { // look in data
         pg = (struct page *)array_getguy(as->useg2, (faultaddress-vbase2)/PAGE_SIZE);
         segment =1;
@@ -521,30 +520,24 @@ vm_fault(int faulttype, vaddr_t faultaddress)
         f_size = as->filesz2;
         offset = as->off_2;
         flags=as->flag2;
-        first_load = 0;
-        //second_write = 1;
+        
     } else if (faultaddress >= stackbase && faultaddress < stacktop) { // look in stack
         pg = (struct page *)array_getguy(as->usegs, ((faultaddress - stackbase)/PAGE_SIZE));
         segment = 2;
         seg_size=DUMBVM_STACKPAGES;
         f_size = as->filesz3;
-        first_load = 0;
         flags=RWE;
     } else {
         segment = -1;
         return EFAULT;
     }
-        
-    //---
    
     int wr_to = 0;
     int err; // useless for now
 
-    //kprintf("Fault %d, Permission %x, Addr %x\n", faulttype,pg->permission,faultaddress );
 	switch (faulttype) {
 	    case VM_FAULT_READONLY:
-                
-                    
+
                     err = EFAULT;
                     _exit(0, &err);   
                 
@@ -556,7 +549,9 @@ vm_fault(int faulttype, vaddr_t faultaddress)
                     pg->valid = 1;
                     pg->vaddr = faultaddress;
                     
+                    
                     if(f_size != 0) {
+                        
                         paddr = getppages(seg_size);
                         if (paddr == NULL)
                         {kprintf("memsize\n");
@@ -564,18 +559,20 @@ vm_fault(int faulttype, vaddr_t faultaddress)
 
                         }
                         
+                        code_write_nread = 1; // reading from code
                         pg->paddr = paddr;
-                        if (segment != 2){
-                        //for (i = 0; i < seg_size; i++) {
+                        if (segment != 2) {
                             splx(spl);
                                 result = load_each_segment(as->v, offset, faultaddress, paddr, seg_size*PAGE_SIZE, f_size, flags & E_ONLY, 0);
                             spl = splhigh();
 
-                            if (result) {kprintf("load\n");
+                            if (result) {
                                     return result;
                             }
-                        //}
                         }
+                        
+                        if (segment == 0 && first_code_read == 0)
+                            first_code_read = 1;
                     
                     } else {
                         paddr = getppages(1);
@@ -584,6 +581,8 @@ vm_fault(int faulttype, vaddr_t faultaddress)
                             return ENOMEM;
 
                         }
+                        if (segment == 0 && first_code_read == 0)
+                        first_code_read = 1;
                     }             
                     
                              pg->paddr = paddr;               
@@ -592,6 +591,8 @@ vm_fault(int faulttype, vaddr_t faultaddress)
                 }
                 else
                 {
+                    if (segment == 0 && first_code_read == 0)
+                        first_code_read = 1;
                     wr_to = 1;
                     paddr = pg->paddr;
                     
@@ -603,7 +604,7 @@ vm_fault(int faulttype, vaddr_t faultaddress)
             
 	    case VM_FAULT_WRITE:
                 
-                //if (segment == 0 && first_read == 0)
+                //if (segment == 0 && first_load == 0)
                         wr_to = 1;
                 
                 if (!pg->valid)
@@ -676,33 +677,69 @@ vm_fault(int faulttype, vaddr_t faultaddress)
 
 	_vmstats_inc(VMSTAT_TLB_FAULT);
         splx(spl);
-
-if (wr_to == 1 || (segment == 2)){
+int j;
+if (wr_to == 1 || (segment == 2) || (first_code_read == 1)){
     
+    
+           // kprintf("faultaddress %x\n", faultaddress);
+        
         lock_acquire(tlb.tlb_lock);
         
+        if (first_code_read && faultaddress >= vbase1 && faultaddress < vtop1) {
+            
+           for (i=0; i<NUM_TLB; i++) {
+                TLB_Read(&ehi, &elo, i);
+                
+                if (!(elo & TLBLO_VALID)) {
+                        continue;
+                }
+                
+                if (ehi >= vbase1 && ehi < vtop1) {
+                    elo &= ~TLBLO_DIRTY;
+                }
+                TLB_Write(ehi, elo, i);
+            }
+           
+           probe = TLB_Probe(faultaddress,0);
+           if (probe >= 0) {
+               first_code_read = 0;
+               code_write_nread = 0;
+            lock_release(tlb.tlb_lock);
+            return 0;
+           }
+           //if ()
+        } //else {
             for (i=0; i<NUM_TLB; i++) {
                 
                     TLB_Read(&ehi, &elo, i);
+                    
+                    
                     if (elo & TLBLO_VALID) {
                             continue;
                     }
                     ehi = faultaddress;
 
-                    if (count_dup == 1 && faultaddress >= vbase1 && faultaddress < vtop1) {
-                        elo = paddr | TLBLO_DIRTY | TLBLO_VALID;
-                        //first_load = 0;
+                    
+                    if ((first_code_read && faultaddress >= vbase1 && faultaddress < vtop1) ||
+                            ((code_write_nread == 0) && faultaddress >= vbase1 && faultaddress < vtop1)) {
+                        
+                            elo = paddr | TLBLO_VALID;
+
+                        first_code_read = 0;
+                        code_write_nread = 0;
                     }
                     else {
-                        if (faultaddress >= vbase1 && faultaddress < vtop1){
-                             elo = paddr | TLBLO_DIRTY | TLBLO_VALID;
-                        }else{
+                        //if (faultaddress >= vbase1 && faultaddress < vtop1){
+                             //elo = paddr | TLBLO_VALID;
+                        //}else{
                             elo = paddr | TLBLO_DIRTY | TLBLO_VALID;
-                        }
+                        //}
                     }
+                        TLB_Write(ehi, elo, i);
+                    
 
                     DEBUG(DB_VM, "dumbvm: 0x%x -> 0x%x\n", faultaddress, paddr);
-                    TLB_Write(ehi, elo, i);
+                    
                     
                     //splx(spl);
             lock_release(tlb.tlb_lock);
@@ -720,26 +757,30 @@ if (wr_to == 1 || (segment == 2)){
 
             ehi = faultaddress;
             
-            if (first_load && wr_to && faultaddress >= vbase1 && faultaddress < vtop1) {
-                elo = paddr | TLBLO_DIRTY | TLBLO_VALID;
-                //first_load = 0;
-            }
-            else {
-                if (faultaddress >= vbase1 && faultaddress < vtop1){
-                        elo = paddr | TLBLO_DIRTY | TLBLO_VALID;
-                }else{
-                        elo = paddr | TLBLO_DIRTY | TLBLO_VALID;
-                }
-            }
+            if ((first_code_read && faultaddress >= vbase1 && faultaddress < vtop1) ||
+                            ((code_write_nread == 0) && faultaddress >= vbase1 && faultaddress < vtop1)) {
+                        
+                            elo = paddr | TLBLO_VALID;
 
-            TLB_Write(ehi, elo, victim);
+                        first_code_read = 0;
+                        code_write_nread = 0;
+                    } else {
+                elo = paddr | TLBLO_DIRTY | TLBLO_VALID;
+                    }
+                 TLB_Write(ehi, elo, victim);
+            //}
+            //}
+
+           
             
             
             lock_release(tlb.tlb_lock);
 
 
             vmstats_inc(VMSTAT_TLB_FAULT_REPLACE); /* STATS *///
+        //}
 }
                 return 0;
 
 }
+
