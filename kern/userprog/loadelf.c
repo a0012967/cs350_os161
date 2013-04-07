@@ -189,13 +189,8 @@ load_elf(struct vnode *v, vaddr_t *entrypoint)
 	if (result) {
 		return result;
 	}
-
-        curthread->t_vmspace->num_segs = eh.e_phnum;
-        curthread->t_vmspace->offset = eh.e_phoff;
-        //kprintf("offset: %d\n", curthread->t_vmspace->offset);
-        curthread->t_vmspace->entsize = eh.e_phentsize;
+        
         curthread->t_vmspace->v = v;
-        curthread->t_vmspace->entrypoint = eh.e_entry;
 
 	/*
 	 * Now actually load each segment.
@@ -228,13 +223,12 @@ load_elf(struct vnode *v, vaddr_t *entrypoint)
 		}
                 //kprintf("vaddr: %x, off: %d, filesz: %d\n", ph.p_vaddr, ph.p_offset, ph.p_filesz);
                 if (i == 1) {
-                    curthread->t_vmspace->off_1 = ph.p_offset;
-                    curthread->t_vmspace->filesz1 = ph.p_filesz;
-                    curthread->t_vmspace->entsize1 = eh.e_phentsize;
+                    curthread->t_vmspace->as_off1 = ph.p_offset;
+                    curthread->t_vmspace->as_filesz1 = ph.p_filesz;
                 }
                 else if (i == 2) {
-                    curthread->t_vmspace->off_2 = ph.p_offset;
-                    curthread->t_vmspace->filesz2 = ph.p_filesz;
+                    curthread->t_vmspace->as_off2 = ph.p_offset;
+                    curthread->t_vmspace->as_filesz2 = ph.p_filesz;
                 }
                 //paddr = getppages();
                 /*
