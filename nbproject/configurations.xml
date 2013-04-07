@@ -3,179 +3,50 @@
   <logicalFolder name="root" displayName="root" projectFiles="true" kind="ROOT">
     <df name="os161-1.11" root=".">
       <df name="a3-test-scripts">
-        <df name=".sockets">
-        </df>
         <df name="bin">
-          <in>cat</in>
-          <in>cp</in>
-          <in>false</in>
-          <in>ln</in>
-          <in>ls</in>
-          <in>mkdir</in>
-          <in>mv</in>
-          <in>pwd</in>
-          <in>rm</in>
-          <in>rmdir</in>
-          <in>sh</in>
-          <in>sync</in>
-          <in>true</in>
         </df>
         <df name="testbin">
-          <in>add</in>
-          <in>argtest</in>
-          <in>badcall</in>
-          <in>bigfile</in>
-          <in>conman</in>
-          <in>crash</in>
-          <in>ctest</in>
-          <in>dirconc</in>
-          <in>dirseek</in>
-          <in>dirtest</in>
-          <in>f_test</in>
-          <in>farm</in>
-          <in>faulter</in>
-          <in>filetest</in>
-          <in>forkbomb</in>
-          <in>forktest</in>
-          <in>guzzle</in>
-          <in>hash</in>
-          <in>hog</in>
-          <in>huge</in>
-          <in>kitchen</in>
-          <in>matmult</in>
-          <in>palin</in>
-          <in>parallelvm</in>
-          <in>randcall</in>
-          <in>rmdirtest</in>
-          <in>rmtest</in>
-          <in>romemwrite</in>
-          <in>sink</in>
-          <in>sort</in>
-          <in>sparse</in>
-          <in>sty</in>
-          <in>tail</in>
-          <in>tictac</in>
-          <in>tlbfaulter</in>
-          <in>triplehuge</in>
-          <in>triplemat</in>
-          <in>triplesort</in>
         </df>
         <df name="uw-testbin">
-          <in>argtest</in>
-          <in>conc-io</in>
-          <in>files1</in>
-          <in>files2</in>
-          <in>segments</in>
-          <in>syscall</in>
-          <in>vm-crash1</in>
-          <in>vm-crash2</in>
-          <in>vm-crash3</in>
-          <in>vm-data1</in>
-          <in>vm-data2</in>
-          <in>vm-data3</in>
-          <in>vm-mix1</in>
-          <in>vm-mix1-exec</in>
-          <in>vm-mix1-fork</in>
-          <in>vm-mix2</in>
-          <in>vm-stack1</in>
-          <in>vm-stack2</in>
-          <in>writeread</in>
         </df>
         <df name="vm-crash1">
-          <in>Makefile</in>
-          <in>depend.mk</in>
           <in>vm-crash1.c</in>
         </df>
         <df name="vm-crash2">
-          <in>Makefile</in>
-          <in>depend.mk</in>
           <in>vm-crash2.c</in>
         </df>
         <df name="vm-crash3">
-          <in>Makefile</in>
-          <in>depend.mk</in>
           <in>funcs.c</in>
           <in>vm-crash3.c</in>
         </df>
         <df name="vm-data1">
-          <in>Makefile</in>
-          <in>depend.mk</in>
           <in>vm-data1.c</in>
         </df>
         <df name="vm-data2">
-          <in>Makefile</in>
-          <in>depend.mk</in>
           <in>vm-data2.c</in>
         </df>
         <df name="vm-data3">
-          <in>Makefile</in>
-          <in>depend.mk</in>
           <in>funcs.c</in>
           <in>vm-data3.c</in>
         </df>
         <df name="vm-mix1">
-          <in>Makefile</in>
-          <in>depend.mk</in>
           <in>funcs.c</in>
           <in>vm-mix1.c</in>
         </df>
         <df name="vm-mix1-fork">
-          <in>Makefile</in>
-          <in>depend.mk</in>
           <in>funcs.c</in>
           <in>vm-mix1-fork.c</in>
         </df>
         <df name="vm-mix2">
-          <in>Makefile</in>
-          <in>depend.mk</in>
           <in>funcs.c</in>
           <in>vm-mix2.c</in>
         </df>
         <df name="vm-stack1">
-          <in>Makefile</in>
-          <in>depend.mk</in>
           <in>vm-stack1.c</in>
         </df>
         <df name="vm-stack2">
-          <in>Makefile</in>
-          <in>depend.mk</in>
           <in>vm-stack2.c</in>
         </df>
-        <in>Makefile</in>
-        <in>README</in>
-        <in>newtests.mk</in>
-        <in>run-batch-A3</in>
-        <in>run-batch-A3-all</in>
-        <in>run-batch-A3-option1</in>
-        <in>strip-text</in>
-        <in>sys161-2MB.conf</in>
-        <in>sys161-8MB.conf</in>
-        <in>sys161-9MB.conf</in>
-        <in>tarlist</in>
-        <in>test-vm-alt-replace</in>
-        <in>test-vm-basic</in>
-        <in>test-vm-big-fork</in>
-        <in>test-vm-big-fork-exec</in>
-        <in>test-vm-big-fork-exec-paging</in>
-        <in>test-vm-big-fork-paging</in>
-        <in>test-vm-big-no-fork</in>
-        <in>test-vm-consecutive</in>
-        <in>test-vm-consecutive-big-01</in>
-        <in>test-vm-consecutive-big-02</in>
-        <in>test-vm-consecutive-big-03</in>
-        <in>test-vm-consecutive-small-01</in>
-        <in>test-vm-crash</in>
-        <in>test-vm-ctest</in>
-        <in>test-vm-huge</in>
-        <in>test-vm-matmult</in>
-        <in>test-vm-matmult-alt</in>
-        <in>test-vm-paging</in>
-        <in>test-vm-parallelvm</in>
-        <in>test-vm-replace</in>
-        <in>test-vm-sort</in>
-        <in>test-vm-triplehuge</in>
-        <in>test-vm-triplemat</in>
-        <in>test-vm-triplesort</in>
       </df>
       <df name="bin">
         <df name="cat">
@@ -493,6 +364,7 @@
           <in>array.h</in>
           <in>bitmap.h</in>
           <in>clock.h</in>
+          <in>coremap.h</in>
           <in>curthread.h</in>
           <in>dev.h</in>
           <in>elf.h</in>
@@ -505,6 +377,7 @@
           <in>pt.h</in>
           <in>queue.h</in>
           <in>scheduler.h</in>
+          <in>segments.h</in>
           <in>sfs.h</in>
           <in>stdarg.h</in>
           <in>synch.h</in>
@@ -516,6 +389,7 @@
           <in>uw-vmstats.h</in>
           <in>version.h</in>
           <in>vfs.h</in>
+          <in>vm-tlb.h</in>
           <in>vm.h</in>
           <in>vnode.h</in>
         </df>
@@ -567,8 +441,11 @@
           <in>addrspace.c</in>
           <in>addrspace_Est.c</in>
           <in>addrspace_yi.c</in>
+          <in>coremap.c</in>
           <in>pt.c</in>
           <in>uw-vmstats.c</in>
+          <in>vm-tlb.c</in>
+          <in>vm.c</in>
         </df>
       </df>
       <df name="lib">

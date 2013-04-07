@@ -433,7 +433,7 @@ vm_fault(int faulttype, vaddr_t faultaddress)
         f_size = as->as_filesz1;
         offset = as->as_off1;
         flags=as->flag1;
-        
+        p_i = (faultaddress-vbase1)/PAGE_SIZE;
     } else if (faultaddress >= vbase2 && faultaddress < vtop2)    { // look in data
         pg = (struct page *)array_getguy(as->useg2, (faultaddress-vbase2)/PAGE_SIZE);
         segment =1;
@@ -441,13 +441,14 @@ vm_fault(int faulttype, vaddr_t faultaddress)
         f_size = as->as_filesz2;
         offset = as->as_off2;
         flags=as->flag2;
-        
+        p_i = (faultaddress-vbase2)/PAGE_SIZE;
     } else if (faultaddress >= stackbase && faultaddress < stacktop) { // look in stack
         pg = (struct page *)array_getguy(as->usegs, ((faultaddress - stackbase)/PAGE_SIZE));
         segment = 2;
         seg_size=DUMBVM_STACKPAGES;
         f_size = 0;
         flags=RWE;
+        p_i = (faultaddress-vbase2)/PAGE_SIZE;
     } else {
         segment = -1;
         return EFAULT;
@@ -455,242 +456,251 @@ vm_fault(int faulttype, vaddr_t faultaddress)
     
     int wr_to = 0;
     int err;
+    int f_amount = PAGE_SIZE;
     
     // Handling TLB miss fault type
 	switch (faulttype) {
 	    case VM_FAULT_READONLY:
-            
-            // kill the current process
-            err = EFAULT;
-            _exit(0, &err);   
-            
+
+                // kill the current process
+                    err = EFAULT;
+                    _exit(0, &err);   
+                
 	    case VM_FAULT_READ:
-            if (!pg->valid) // page is not in memory
-            {
-                pg->valid = 1;
-                pg->vaddr = faultaddress;
-                
-                
-                if(f_size != 0) {
+                if (!pg->valid) // page is not in memory
+                {
+                    pg->valid = 1;
+                    pg->vaddr = faultaddress;
                     
-                    paddr = getppages(1);
-                    if (paddr == NULL)
-                    {
-                        return ENOMEM;
-                    }
                     
-                    code_write_nread = 1; // reading from code
-                    pg->paddr = paddr;
-                    if (segment != 2) {
-                        splx(spl);
-                        result = load_each_segment(as->v, offset, faultaddress, paddr, seg_size*PAGE_SIZE, f_size, flags & E_ONLY, 0);
-                        spl = splhigh();
+                    if(f_size != 0) {
                         
-                        if (result) {
-                            return result;
+                        paddr = getppages(1);
+                        if (paddr == NULL)
+                        {
+                            return ENOMEM;
                         }
-                        _vmstats_inc(VMSTAT_PAGE_FAULT_DISK);
-                        _vmstats_inc(VMSTAT_ELF_FILE_READ);
                         
+                        code_write_nread = 1; // reading from code
+                        pg->paddr = paddr;
+                        if (segment != 2) {
+                            
+                            if (f_size < f_amount)
+                                f_amount = f_size;
+                            
+                            splx(spl);
+                                result = load_each_segment(as->v, offset+(p_i*PAGE_SIZE), faultaddress, paddr, PAGE_SIZE, f_amount, flags & E_ONLY, 0);
+                            spl = splhigh();
+
+                            if (result) {
+                                    return result;
+                            }
+                            _vmstats_inc(VMSTAT_PAGE_FAULT_DISK);
+                            _vmstats_inc(VMSTAT_ELF_FILE_READ);
+                            
+                        } else {
+                            _vmstats_inc(VMSTAT_PAGE_FAULT_ZERO); /* STATS */
+                        }
+                        
+                        if (segment == 0 && first_code_read == 0)
+                            first_code_read = 1;
+                    
                     } else {
+                        paddr = getppages(1);
+                        if (paddr == NULL)
+                        {
+                            return ENOMEM;
+
+                        }
+                        if (segment == 0 && first_code_read == 0)
+                        first_code_read = 1;
+                        
                         _vmstats_inc(VMSTAT_PAGE_FAULT_ZERO); /* STATS */
                     }
                     
-                    if (segment == 0 && first_code_read == 0)
-                        first_code_read = 1;
-                    
-                } else {
-                    paddr = getppages(1);
-                    if (paddr == NULL)
-                    {
-                        return ENOMEM;
-                        
-                    }
-                    if (segment == 0 && first_code_read == 0)
-                        first_code_read = 1;
-                    
-                    _vmstats_inc(VMSTAT_PAGE_FAULT_ZERO); /* STATS */
+                    pg->paddr = paddr;
+
                 }
-                
-                pg->paddr = paddr;
-                
-            }
-            else // page is in memory
-            {
-                if (segment == 0 && first_code_read == 0)
-                    first_code_read = 1;
-                wr_to = 1;
-                paddr = pg->paddr;
-                
-                _vmstats_inc(VMSTAT_TLB_RELOAD); /* STATS */
-            }
-            
+                else // page is in memory
+                {
+                    if (segment == 0 && first_code_read == 0)
+                        first_code_read = 1;
+                    wr_to = 1;
+                    paddr = pg->paddr;
+                    
+                    _vmstats_inc(VMSTAT_TLB_RELOAD); /* STATS */
+                }
+    
             break;
             
 	    case VM_FAULT_WRITE:
-            
-            wr_to = 1;
-            
-            if (!pg->valid)
-            {
-                pg->valid = 1;
-                pg->vaddr = faultaddress;
                 
+                wr_to = 1;
                 
-                if(f_size != 0) {
+                if (!pg->valid)
+                {
+                    pg->valid = 1;
+                    pg->vaddr = faultaddress;
                     
-                    if (second_write == 0 && segment == 1) {
-                        first_read = 0;
-                        paddr = getppages(1);
-                        second_write = 1;
-                        wr_to = 0;
-                    } else {
-                        first_read = 1;
-                        paddr = getppages(1);
-                    }
                     
-                    if (paddr == NULL)
-                    {
-                        return ENOMEM;
+                    if(f_size != 0) {
                         
-                    }
-                    pg->paddr = paddr;
-                    
-                    if (segment != 2) {
-                        
-                        splx(spl);
-                        
-                        result = load_each_segment(as->v, offset, faultaddress, paddr, seg_size*PAGE_SIZE, f_size, flags & E_ONLY, first_read);
-                        spl = splhigh();
-                        
-                        if (result) {
-                            lock_release(tlb.tlb_lock);
-                            return result;
+                        if (second_write == 0 && segment == 1) {
+                            first_read = 0;
+                            paddr = getppages(1);
+                            second_write = 1;
+                            wr_to = 0;
+                        } else {
+                            first_read = 1;
+                            paddr = getppages(1);
                         }
                         
-                        _vmstats_inc(VMSTAT_PAGE_FAULT_DISK);
-                        _vmstats_inc(VMSTAT_ELF_FILE_READ);
+                        if (paddr == NULL)
+                        {
+                            return ENOMEM;
+
+                        }
+                        pg->paddr = paddr;
                         
+                        if (segment != 2) {
+                            
+                            if (f_size < f_amount)
+                                f_amount = f_size;
+                            
+                            splx(spl);
+
+                            result = load_each_segment(as->v, offset+(p_i*PAGE_SIZE), faultaddress, paddr, PAGE_SIZE, f_amount, flags & E_ONLY, first_read);
+                            spl = splhigh();
+
+                            if (result) {
+                                lock_release(tlb.tlb_lock);
+                                   return result;
+                            }
+                                
+                            _vmstats_inc(VMSTAT_PAGE_FAULT_DISK);
+                            _vmstats_inc(VMSTAT_ELF_FILE_READ);
+                            
+                        } else {
+                            _vmstats_inc(VMSTAT_PAGE_FAULT_ZERO); /* STATS */
+                        }
                     } else {
+                        paddr = getppages(1);
+                        if (paddr == NULL)
+                        {
+                            return ENOMEM;
+
+                        }
                         _vmstats_inc(VMSTAT_PAGE_FAULT_ZERO); /* STATS */
                     }
-                } else {
-                    paddr = getppages(1);
-                    if (paddr == NULL)
-                    {
-                        return ENOMEM;
-                        
-                    }
-                    _vmstats_inc(VMSTAT_PAGE_FAULT_ZERO); /* STATS */
+                    pg->paddr = paddr;
                 }
-                pg->paddr = paddr;
-            }
-            else
-            {
-                paddr = pg->paddr;
-                
-                _vmstats_inc(VMSTAT_TLB_RELOAD); /* STATS */
-                
-            }
-            break;
+                else
+                {
+                    paddr = pg->paddr;
+                    
+                    _vmstats_inc(VMSTAT_TLB_RELOAD); /* STATS */
+                      
+                }
+		break;
 	    default:
-            return EINVAL;
+		return EINVAL;
 	}
-    
-    splx(spl);
-    
-    _vmstats_inc(VMSTAT_TLB_FAULT);
-    
-    if (wr_to == 1 || (segment == 2) || (first_code_read == 1)) {
-        
-        lock_acquire(tlb.tlb_lock);
-        
-        if (first_code_read && faultaddress >= vbase1 && faultaddress < vtop1) {
+
+        splx(spl);
+
+        _vmstats_inc(VMSTAT_TLB_FAULT);
+
+        if (wr_to == 1 || (segment == 2) || (first_code_read == 1)) {
             
+            lock_acquire(tlb.tlb_lock);
+        
+            if (first_code_read && faultaddress >= vbase1 && faultaddress < vtop1) {
+
+               for (i=0; i<NUM_TLB; i++) {
+                    TLB_Read(&ehi, &elo, i);
+
+                    if (!(elo & TLBLO_VALID)) {
+                            continue;
+                    }
+
+                    if (ehi >= vbase1 && ehi < vtop1) {
+                        elo &= ~TLBLO_DIRTY;
+                    }
+                    TLB_Write(ehi, elo, i);
+                }
+
+               probe = TLB_Probe(faultaddress,0);
+               if (probe >= 0) {
+                    first_code_read = 0;
+                    code_write_nread = 0;
+
+                    lock_release(tlb.tlb_lock);
+
+                    vmstats_inc(VMSTAT_TLB_FAULT_FREE); /* STATS */
+
+                    return 0;
+               }
+            }
             for (i=0; i<NUM_TLB; i++) {
-                TLB_Read(&ehi, &elo, i);
                 
-                if (!(elo & TLBLO_VALID)) {
-                    continue;
-                }
-                
-                if (ehi >= vbase1 && ehi < vtop1) {
-                    elo &= ~TLBLO_DIRTY;
-                }
-                TLB_Write(ehi, elo, i);
+                    TLB_Read(&ehi, &elo, i);
+                    
+                    
+                    if (elo & TLBLO_VALID) {
+                            continue;
+                    }
+                    ehi = faultaddress;
+
+                    
+                    if ((first_code_read && faultaddress >= vbase1 && faultaddress < vtop1) ||
+                            ((code_write_nread == 0) && faultaddress >= vbase1 && faultaddress < vtop1)) {
+                        
+                            elo = paddr | TLBLO_VALID;
+
+                        first_code_read = 0;
+                        code_write_nread = 0;
+                    }
+                    else {
+                        elo = paddr | TLBLO_DIRTY | TLBLO_VALID;
+                    }
+                        TLB_Write(ehi, elo, i);
+                    
+
+                    DEBUG(DB_VM, "dumbvm: 0x%x -> 0x%x\n", faultaddress, paddr);
+                    
+                    lock_release(tlb.tlb_lock);
+                    vmstats_inc(VMSTAT_TLB_FAULT_FREE); /* STATS */
+                    return 0;
             }
-            
-            probe = TLB_Probe(faultaddress,0);
-            if (probe >= 0) {
-                first_code_read = 0;
-                code_write_nread = 0;
-                
-                lock_release(tlb.tlb_lock);
-                
-                vmstats_inc(VMSTAT_TLB_FAULT_FREE); /* STATS */
-                
-                return 0;
+
+            int victim = tlb_get_rr_victim();
+            //kprintf("vm fault: got our victim, %d \n",victim);
+            if (victim < 0 || victim >= NUM_TLB)
+            {
+                 lock_release(tlb.tlb_lock);
+                return EFAULT;
             }
-        }
-        for (i=0; i<NUM_TLB; i++) {
-            
-            TLB_Read(&ehi, &elo, i);
-            
-            
-            if (elo & TLBLO_VALID) {
-                continue;
-            }
+
             ehi = faultaddress;
             
-            
             if ((first_code_read && faultaddress >= vbase1 && faultaddress < vtop1) ||
-                ((code_write_nread == 0) && faultaddress >= vbase1 && faultaddress < vtop1)) {
-                
+                            ((code_write_nread == 0) && faultaddress >= vbase1 && faultaddress < vtop1)) {
                 elo = paddr | TLBLO_VALID;
-                
+
                 first_code_read = 0;
                 code_write_nread = 0;
-            }
-            else {
+            } else {
                 elo = paddr | TLBLO_DIRTY | TLBLO_VALID;
             }
-            TLB_Write(ehi, elo, i);
+                 TLB_Write(ehi, elo, victim);          
             
-            
-            DEBUG(DB_VM, "dumbvm: 0x%x -> 0x%x\n", faultaddress, paddr);
             
             lock_release(tlb.tlb_lock);
-            vmstats_inc(VMSTAT_TLB_FAULT_FREE); /* STATS */
-            return 0;
-        }
-        
-        int victim = tlb_get_rr_victim();
-        //kprintf("vm fault: got our victim, %d \n",victim);
-        if (victim < 0 || victim >= NUM_TLB)
-        {
-            lock_release(tlb.tlb_lock);
-            return EFAULT;
-        }
-        
-        ehi = faultaddress;
-        
-        if ((first_code_read && faultaddress >= vbase1 && faultaddress < vtop1) ||
-            ((code_write_nread == 0) && faultaddress >= vbase1 && faultaddress < vtop1)) {
-            elo = paddr | TLBLO_VALID;
-            
-            first_code_read = 0;
-            code_write_nread = 0;
-        } else {
-            elo = paddr | TLBLO_DIRTY | TLBLO_VALID;
-        }
-        TLB_Write(ehi, elo, victim);          
-        
-        
-        lock_release(tlb.tlb_lock);
-        vmstats_inc(VMSTAT_TLB_FAULT_REPLACE); /* STATS */
+            vmstats_inc(VMSTAT_TLB_FAULT_REPLACE); /* STATS */
     } else {
         vmstats_inc(VMSTAT_TLB_FAULT_REPLACE);
     }
-    return 0;
-    
+                return 0;
+
 }
+
