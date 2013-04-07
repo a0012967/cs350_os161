@@ -27,39 +27,38 @@ struct addrspace {
 	paddr_t as_stackpbase;
 #else     
 
-    vaddr_t as_vbase1;
-	//paddr_t as_pbase1;   // Yi: don't need pbase anymore since memory is not continugous
+#if OPT_A3
+        
+        /* Code or Text */
+        
+        vaddr_t as_vbase1;
 	size_t as_npages1;
-        size_t filesz1;
-	vaddr_t as_vbase2;
+        size_t as_filesz1;
+        off_t as_off1;
         int flag1;
-        int entsize1;
-	//paddr_t as_pbase2;
+        
+        struct array *useg1;    //code
+    
+        
+        /* Data */
+        
+	vaddr_t as_vbase2;
 	size_t as_npages2;
-        size_t filesz2;
+        size_t as_filesz2;
+        off_t as_off2;
         int flag2;
-	//paddr_t as_stackpbase;
-        size_t filesz3;
-    
-    
-    struct array *useg1;    //code
-    off_t off_1;
-    struct array *useg2;    //data
-    off_t off_2;
-    struct array *usegs;    //stack
+        
+        struct array *useg2;    //data
+        
+        /* Stack */
+        
+        struct array *usegs;    //stack
 
-    struct vnode *v;
-    off_t offset;
-    size_t filesize;
-    int p_flags;
-    int num_segs;
-    int entsize;
-    
-    int done;
-    vaddr_t entrypoint;
-    vaddr_t stackpointer;
-    char* progname;
-    
+        
+        /* Reference to ELF file */
+        
+        struct vnode *v;    
+#endif
 #endif
 };
 

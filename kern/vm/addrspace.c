@@ -60,10 +60,7 @@ as_create(void)
     as->useg1 = array_create();
     as->useg2 = array_create();
     as->usegs = array_create();
-    //as->tlb = kmalloc(sizeof(struct tlb));   
-    //as->tlb->tlb_lock = lock_create("tlb lock");
-    //as->tlb->next_victim = 0;
-    as->done = 0;
+    
 #endif
     
 	return as;
@@ -239,7 +236,7 @@ as_define_region(struct addrspace *as, vaddr_t vaddr, size_t sz, size_t f_sz,
     if (as->as_vbase1 == 0) { // code segment useg1
         as->as_vbase1 = vaddr;
         as->as_npages1 = npages;
-        as->filesz1 = f_sz;
+        as->as_filesz1 = f_sz;
         as->flag1 = readable|writeable|executable;
         
         unsigned int i;
@@ -258,7 +255,7 @@ as_define_region(struct addrspace *as, vaddr_t vaddr, size_t sz, size_t f_sz,
     } else if (as->as_vbase2 == 0) { // data segment useg2
         as->as_vbase2 = vaddr;
         as ->as_npages2 = npages;
-        as->filesz2 = f_sz;
+        as->as_filesz2 = f_sz;
         as->flag2 = readable|writeable|executable;
         
         unsigned int i;
@@ -340,9 +337,7 @@ as_complete_load(struct addrspace *as)
 	 */
     
 #if OPT_A3
-    //don't know yet!!!
-    //(void)as;
-    as->done = 1;
+    
 	return 0;
 #else
 	(void)as;

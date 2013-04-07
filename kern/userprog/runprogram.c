@@ -60,7 +60,7 @@ return ENOMEM;
 
 /* Activate it. */
 as_activate(curthread->t_vmspace);
-curthread->t_vmspace->progname = progname;
+
 /* Load the executable. */
 result = load_elf(v, &entrypoint);
 if (result) {
