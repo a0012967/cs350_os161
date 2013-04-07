@@ -257,7 +257,6 @@ alloc_kpages(int npages)
     
 	if (pa==0) {
         
-        kprintf("pa == 0\n");
 		return 0;
 	}
     
@@ -569,6 +568,11 @@ vm_fault(int faulttype, vaddr_t faultaddress)
                             if (result) {
                                     return result;
                             }
+                            _vmstats_inc(VMSTAT_PAGE_FAULT_DISK);
+                            _vmstats_inc(VMSTAT_ELF_FILE_READ);
+                            
+                        } else {
+                            _vmstats_inc(VMSTAT_PAGE_FAULT_ZERO); /* STATS */
                         }
                         
                         if (segment == 0 && first_code_read == 0)
@@ -583,10 +587,12 @@ vm_fault(int faulttype, vaddr_t faultaddress)
                         }
                         if (segment == 0 && first_code_read == 0)
                         first_code_read = 1;
+                        
+                        _vmstats_inc(VMSTAT_PAGE_FAULT_ZERO); /* STATS */
                     }             
                     
                              pg->paddr = paddr;               
-                    _vmstats_inc(VMSTAT_PAGE_FAULT_ZERO); /* STATS */
+                   // _vmstats_inc(VMSTAT_PAGE_FAULT_ZERO); /* STATS */
 
                 }
                 else
@@ -636,19 +642,24 @@ vm_fault(int faulttype, vaddr_t faultaddress)
 
                         }
                         pg->paddr = paddr;
-                        //paddr = pg->paddr;
-                        if (segment != 2){
-                            //for (i = 0; i < seg_size; i++) {
-                                splx(spl);
-    //kprintf("before\n");
-                                result = load_each_segment(as->v, offset, faultaddress, paddr, seg_size*PAGE_SIZE, f_size, flags & E_ONLY, first_read);
-                                spl = splhigh();
-                                //kprintf("after\n");
-                                if (result) {
-                                    lock_release(tlb.tlb_lock);
-                                       return result;
-                                }
-                            //}
+                        
+                        if (segment != 2) {
+                            
+                            splx(spl);
+
+                            result = load_each_segment(as->v, offset, faultaddress, paddr, seg_size*PAGE_SIZE, f_size, flags & E_ONLY, first_read);
+                            spl = splhigh();
+
+                            if (result) {
+                                lock_release(tlb.tlb_lock);
+                                   return result;
+                            }
+                                
+                            _vmstats_inc(VMSTAT_PAGE_FAULT_DISK);
+                            _vmstats_inc(VMSTAT_ELF_FILE_READ);
+                            
+                        } else {
+                            _vmstats_inc(VMSTAT_PAGE_FAULT_ZERO); /* STATS */
                         }
                     } else {
                         paddr = getppages(1);
@@ -657,16 +668,14 @@ vm_fault(int faulttype, vaddr_t faultaddress)
                             return ENOMEM;
 
                         }
+                        _vmstats_inc(VMSTAT_PAGE_FAULT_ZERO); /* STATS */
                     }
                     pg->paddr = paddr;
-
-
-                    _vmstats_inc(VMSTAT_PAGE_FAULT_ZERO); /* STATS */
                 }
                 else
                 {
                     paddr = pg->paddr;
-                    //kprintf("paddr %x\n", paddr);
+                    
                     _vmstats_inc(VMSTAT_TLB_RELOAD); /* STATS */
                       
                 }
@@ -675,14 +684,11 @@ vm_fault(int faulttype, vaddr_t faultaddress)
 		return EINVAL;
 	}
 
-	_vmstats_inc(VMSTAT_TLB_FAULT);
         splx(spl);
 int j;
-if (wr_to == 1 || (segment == 2) || (first_code_read == 1)){
+_vmstats_inc(VMSTAT_TLB_FAULT);
+if (wr_to == 1 || (segment == 2) || (first_code_read == 1)) {
     
-    
-           // kprintf("faultaddress %x\n", faultaddress);
-        
         lock_acquire(tlb.tlb_lock);
         
         if (first_code_read && faultaddress >= vbase1 && faultaddress < vtop1) {
@@ -702,10 +708,14 @@ if (wr_to == 1 || (segment == 2) || (first_code_read == 1)){
            
            probe = TLB_Probe(faultaddress,0);
            if (probe >= 0) {
-               first_code_read = 0;
-               code_write_nread = 0;
-            lock_release(tlb.tlb_lock);
-            return 0;
+                first_code_read = 0;
+                code_write_nread = 0;
+                
+                lock_release(tlb.tlb_lock);
+                
+                vmstats_inc(VMSTAT_TLB_FAULT_FREE); /* STATS */
+                
+                return 0;
            }
            //if ()
         } //else {
@@ -742,8 +752,8 @@ if (wr_to == 1 || (segment == 2) || (first_code_read == 1)){
                     
                     
                     //splx(spl);
-            lock_release(tlb.tlb_lock);
-            vmstats_inc(VMSTAT_TLB_FAULT_FREE); /* STATS */
+                    lock_release(tlb.tlb_lock);
+                    vmstats_inc(VMSTAT_TLB_FAULT_FREE); /* STATS */
                     return 0;
             }
 
@@ -759,19 +769,14 @@ if (wr_to == 1 || (segment == 2) || (first_code_read == 1)){
             
             if ((first_code_read && faultaddress >= vbase1 && faultaddress < vtop1) ||
                             ((code_write_nread == 0) && faultaddress >= vbase1 && faultaddress < vtop1)) {
-                        
-                            elo = paddr | TLBLO_VALID;
+                elo = paddr | TLBLO_VALID;
 
-                        first_code_read = 0;
-                        code_write_nread = 0;
-                    } else {
+                first_code_read = 0;
+                code_write_nread = 0;
+            } else {
                 elo = paddr | TLBLO_DIRTY | TLBLO_VALID;
-                    }
-                 TLB_Write(ehi, elo, victim);
-            //}
-            //}
-
-           
+            }
+                 TLB_Write(ehi, elo, victim);          
             
             
             lock_release(tlb.tlb_lock);
@@ -779,6 +784,8 @@ if (wr_to == 1 || (segment == 2) || (first_code_read == 1)){
 
             vmstats_inc(VMSTAT_TLB_FAULT_REPLACE); /* STATS *///
         //}
+} else {
+    vmstats_inc(VMSTAT_TLB_FAULT_REPLACE);
 }
                 return 0;
 
