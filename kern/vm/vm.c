@@ -24,14 +24,14 @@
 /* under dumbvm, always have 48k of user stack */
 #define DUMBVM_STACKPAGES    12
 
-   /*
-    * note:
-    * permissions as set in elf.h:
-    * readable = 0x4
-    * writable = 0x2
-    * executable = 0x1
-    * 
-    */
+/*
+ * note:
+ * permissions as set in elf.h:
+ * readable = 0x4
+ * writable = 0x2
+ * executable = 0x1
+ * 
+ */
 
 #define R_ONLY 0x4
 #define W_ONLY 0x2
@@ -88,16 +88,11 @@ void vm_bootstrap(){
             
         }
         else{
-            
-            
             coremap->used =0;
             coremap->flag =0;
-            
-            
         }
         coremap->pid = -1;
         coremap->paddr = firstaddr+(i*PAGE_SIZE);
-        // kprintf("coremap: paddr %p  PAGE_FRAME: %p, bitwise and: %p\n",(void *) coremap->paddr,(void *)PAGE_FRAME, (void *)(coremap->paddr & PAGE_FRAME));
         assert((coremap->paddr & PAGE_FRAME) == coremap->paddr); //checks if the paddr is in the frame
         coremap->len = -1;
         
@@ -122,7 +117,6 @@ static
 paddr_t
 getppages(unsigned long npages)
 {
-    // kprintf("call to getpages\n");
 #if OPT_A3
     //lock_acquire(table_lock);
     //alloc_kpages can be called before vm_bootstrap so
@@ -137,7 +131,6 @@ getppages(unsigned long npages)
         
         splx(spl);
         return addr;
-        //panic("PAGE TABLE NOT INITIALIZE\N");
         
     }
     lock_acquire(core_lock);
@@ -145,7 +138,6 @@ getppages(unsigned long npages)
     time_t secs;
     u_int32_t nano;
     unsigned long count_pages;
-    //kprintf("getppages: about to count coremap\n");
     for(i = 0; i< coremap_size; i++){
         j = i - npages + 1;
         if(!(coremap[i].used)){
@@ -161,7 +153,7 @@ getppages(unsigned long npages)
                 //assert(curthread != NULL);
                 //assert(curthread->t_process != NULL);
                 if(curthread != NULL && curthread->t_process !=NULL){
-                coremap[j].pid = curthread->t_process->PID;
+                    coremap[j].pid = curthread->t_process->PID;
                 }
                 break;
             }
@@ -175,7 +167,7 @@ getppages(unsigned long npages)
     
     if(count_pages == npages){
         // int j;
-       // kprintf("coremap: j: %d secs: %ld nano: %ld\n",j,(long)coremap[j].secs,(long )coremap[j].nano);
+        // kprintf("coremap: j: %d secs: %ld nano: %ld\n",j,(long)coremap[j].secs,(long )coremap[j].nano);
         
         for(j =i - npages +1;j<(i+1);j++){
             //coremap[j].pid = curthread->t_process->PID;
@@ -183,11 +175,11 @@ getppages(unsigned long npages)
             
             
         }
-
+        
         assert((coremap[i-npages+1].paddr & PAGE_FRAME) == coremap[i-npages+1].paddr);//make sure the address is in the frame
         
         lock_release(core_lock);
-
+        
         return coremap[i-npages+1].paddr;
         
     }
@@ -198,10 +190,10 @@ getppages(unsigned long npages)
      */
     
     /*
-    paddr_t pa;
-    pa = page_algorithmn();
-    return pa;
-    */
+     paddr_t pa;
+     pa = page_algorithmn();
+     return pa;
+     */
     
     
     lock_release(core_lock);
@@ -247,22 +239,13 @@ void coremap_insertpid(paddr_t pa,pid_t pid){
 vaddr_t 
 alloc_kpages(int npages)
 {
-    
-
-    //kprintf("call to alloc_kpages: npages: %d\n",npages);
-
     //virtually no change, only the implementation of getppages
 	paddr_t pa;
 	pa = getppages(npages);
     
 	if (pa==0) {
-        
 		return 0;
 	}
-    
-    
-
-
     vaddr_t va;
     va = PADDR_TO_KVADDR(pa);
     
@@ -271,13 +254,7 @@ alloc_kpages(int npages)
         assert(curthread->t_process != NULL);
         coremap_insertpid(pa,curthread->t_process->PID);
     }
-    // kprintf("alloc address: %p, npages: %d\n",va,npages);
-    
-    
-
     return va;
-	
-    
 }
 
 
@@ -285,34 +262,20 @@ void
 free_kpages(vaddr_t addr)
 {
     lock_acquire(core_lock);
-    // kprintf("trying to free: %p\n",addr);
     int i =0;
-    //kprintf("paddr: %p\n", PADDR_TO_KVADDR(coremap[i].paddr));
-    //kprintf("1\n");
-    
     if(!(addr>USERTOP)){
-       // kprintf("this case: %d\n",curthread->t_process->PID);
         for(i = 0; i< coremap_size;i++){
             
             assert(curthread != NULL);
             assert(curthread->t_process != NULL);
             if(PADDR_TO_KVADDR(coremap[i].paddr) == addr && coremap[i].pid == curthread->t_process->PID){
-                
-                //i++;
-                //kprintf("Found the vaddr: at i: %d\n",i);
                 break;
             }
         }
     }
     else{
-        
         for(i = 0; i< coremap_size;i++){
-            
-            
             if(PADDR_TO_KVADDR(coremap[i].paddr) == addr){
-                
-                //i++;
-                //kprintf("Found the vaddr: at i: %d\n",i);
                 break;
             }
         }
@@ -325,33 +288,6 @@ free_kpages(vaddr_t addr)
     }
     
     
-    
-    /*
-     while(PADDR_TO_KVADDR(coremap[i].paddr) != addr){
-     kprintf("paddr: %p i: %d\n", PADDR_TO_KVADDR(coremap[i].paddr),i);
-     //kprintf("1\n");
-     i++;
-     
-     
-     
-     }*/
-    
-    
-    
-    /*
-     if(val )
-     int j;
-     for(j = 0; j<coremap_size;j++){
-     
-     kprintf("j: %d paddr: %p, used: %d, len: %d \n",j,coremap[j].paddr,coremap[j].used,coremap[j].len);
-     
-     }*/
-    
-    
-    
-    
-    //kprintf("i is: %d, len is %d, paddr is %p\n",i,coremap[i].len,PADDR_TO_KVADDR(coremap[i].paddr));
-    
     assert(coremap[i].len != -1);
     
     int len =coremap[i].len;
@@ -362,23 +298,7 @@ free_kpages(vaddr_t addr)
         //coremap[z+i].pid = -1;
         coremap[z+i].used = 0;
     }
-    // kprintf("finished freeing \n");
-    /*
-     if(i == 10){
-     
-     int j = 0;
-     kprintf("---------------------\n");
-     for(j =0;j<20;j++){
-     
-     
-     kprintf("j: %d, paddr: %p , used: %d, len: %d\n",j,coremap[j].paddr,coremap[j].used,coremap[j].len);
-     
-     
-     }
-     
-     
-     }
-     */
+    
     lock_release(core_lock);
 }
 
@@ -386,39 +306,39 @@ free_kpages(vaddr_t addr)
 static
 int
 load_each_segment(struct vnode *v, off_t offset, vaddr_t vaddr, paddr_t paddr, 
-	     size_t memsize, size_t filesize,
-	     int is_executable, int first_read)
+                  size_t memsize, size_t filesize,
+                  int is_executable, int first_read)
 {
 	struct uio u;
 	int result;
 	size_t fillamt;
-        int spl;
-
+    int spl;
+    
 	if (filesize > memsize) {
 		kprintf("ELF: warning: segment filesize > segment memsize\n");
 		filesize = memsize;
 	}
-        
+    
 	DEBUG(DB_EXEC, "ELF: Loading %lu bytes to 0x%lx\n", 
 	      (unsigned long) filesize, (unsigned long) vaddr);
-
-        if(first_read == 0){
-            
-            u.uio_iovec.iov_ubase = (userptr_t)vaddr;
-            u.uio_iovec.iov_len = memsize;   // length of the memory space
-            u.uio_resid = filesize;          // amount to actually read
-            u.uio_offset = offset;
-            u.uio_segflg = is_executable ? UIO_USERISPACE : UIO_USERSPACE;
-            u.uio_rw = UIO_READ;
-            u.uio_space = curthread->t_vmspace;
-
-        }else{
-            
-            return 0;
-        }
-	
-        result = VOP_READ(v, &u);
+    
+    if(first_read == 0){
         
+        u.uio_iovec.iov_ubase = (userptr_t)vaddr;
+        u.uio_iovec.iov_len = memsize;   // length of the memory space
+        u.uio_resid = filesize;          // amount to actually read
+        u.uio_offset = offset;
+        u.uio_segflg = is_executable ? UIO_USERISPACE : UIO_USERSPACE;
+        u.uio_rw = UIO_READ;
+        u.uio_space = curthread->t_vmspace;
+        
+    }else{
+        
+        return 0;
+    }
+	
+    result = VOP_READ(v, &u);
+    
 	if (result) {
         
 		return result;
@@ -428,8 +348,8 @@ load_each_segment(struct vnode *v, off_t offset, vaddr_t vaddr, paddr_t paddr,
 		kprintf("ELF: short read on segment - file truncated?\n");
 		return ENOEXEC;
 	}
-
-	 /* Fill the rest of the memory space (if any) with zeros */
+    
+    /* Fill the rest of the memory space (if any) with zeros */
 	fillamt = memsize - filesize;
 	if (fillamt > 0) {
 		DEBUG(DB_EXEC, "ELF: Zero-filling %lu more bytes\n", 
@@ -455,17 +375,17 @@ vm_fault(int faulttype, vaddr_t faultaddress)
 	u_int32_t ehi, elo;
 	struct addrspace *as = curthread->t_vmspace;
 	int spl;
-        int result;
-        int probe;
- 
-        if (first_v != faultaddress)
-        {
-            first_v = faultaddress;
-            first_read = 0;
-        } else {
-            first_read = 1;
-        }
-        
+    int result;
+    int probe;
+    
+    if (first_v != faultaddress)
+    {
+        first_v = faultaddress;
+        first_read = 0;
+    } else {
+        first_read = 1;
+    }
+    
     int p_i;
     
 	spl = splhigh();
@@ -511,7 +431,7 @@ vm_fault(int faulttype, vaddr_t faultaddress)
         f_size = as->filesz1;
         offset = as->off_1;
         flags=as->flag1;
-            
+        
     } else if (faultaddress >= vbase2 && faultaddress < vtop2)    { // look in data
         pg = (struct page *)array_getguy(as->useg2, (faultaddress-vbase2)/PAGE_SIZE);
         segment =1;
@@ -530,174 +450,174 @@ vm_fault(int faulttype, vaddr_t faultaddress)
         segment = -1;
         return EFAULT;
     }
-   
+    
     int wr_to = 0;
     int err; // useless for now
-
+    
 	switch (faulttype) {
 	    case VM_FAULT_READONLY:
-
-                    err = EFAULT;
-                    _exit(0, &err);   
-                
-                
-		/* We always create pages read-write, so we can't get this */
+            
+            err = EFAULT;
+            _exit(0, &err);   
+            
+            
+            /* We always create pages read-write, so we can't get this */
 	    case VM_FAULT_READ: // need to add a new page
-                if (!pg->valid)
-                {
-                    pg->valid = 1;
-                    pg->vaddr = faultaddress;
+            if (!pg->valid)
+            {
+                pg->valid = 1;
+                pg->vaddr = faultaddress;
+                
+                
+                if(f_size != 0) {
                     
-                    
-                    if(f_size != 0) {
+                    paddr = getppages(seg_size);
+                    if (paddr == NULL)
+                    {kprintf("memsize\n");
+                        return ENOMEM;
                         
-                        paddr = getppages(seg_size);
-                        if (paddr == NULL)
-                        {kprintf("memsize\n");
-                            return ENOMEM;
-
+                    }
+                    
+                    code_write_nread = 1; // reading from code
+                    pg->paddr = paddr;
+                    if (segment != 2) {
+                        splx(spl);
+                        result = load_each_segment(as->v, offset, faultaddress, paddr, seg_size*PAGE_SIZE, f_size, flags & E_ONLY, 0);
+                        spl = splhigh();
+                        
+                        if (result) {
+                            return result;
                         }
+                        _vmstats_inc(VMSTAT_PAGE_FAULT_DISK);
+                        _vmstats_inc(VMSTAT_ELF_FILE_READ);
                         
-                        code_write_nread = 1; // reading from code
-                        pg->paddr = paddr;
-                        if (segment != 2) {
-                            splx(spl);
-                                result = load_each_segment(as->v, offset, faultaddress, paddr, seg_size*PAGE_SIZE, f_size, flags & E_ONLY, 0);
-                            spl = splhigh();
-
-                            if (result) {
-                                    return result;
-                            }
-                            _vmstats_inc(VMSTAT_PAGE_FAULT_DISK);
-                            _vmstats_inc(VMSTAT_ELF_FILE_READ);
-                            
-                        } else {
-                            _vmstats_inc(VMSTAT_PAGE_FAULT_ZERO); /* STATS */
-                        }
-                        
-                        if (segment == 0 && first_code_read == 0)
-                            first_code_read = 1;
-                    
                     } else {
-                        paddr = getppages(1);
-                        if (paddr == NULL)
-                        {
-                            return ENOMEM;
-
-                        }
-                        if (segment == 0 && first_code_read == 0)
-                        first_code_read = 1;
-                        
                         _vmstats_inc(VMSTAT_PAGE_FAULT_ZERO); /* STATS */
-                    }             
+                    }
                     
-                             pg->paddr = paddr;               
-                   // _vmstats_inc(VMSTAT_PAGE_FAULT_ZERO); /* STATS */
-
-                }
-                else
-                {
                     if (segment == 0 && first_code_read == 0)
                         first_code_read = 1;
-                    wr_to = 1;
-                    paddr = pg->paddr;
                     
-                    _vmstats_inc(VMSTAT_TLB_RELOAD); /* STATS */
-                }
+                } else {
+                    paddr = getppages(1);
+                    if (paddr == NULL)
+                    {
+                        return ENOMEM;
+                        
+                    }
+                    if (segment == 0 && first_code_read == 0)
+                        first_code_read = 1;
+                    
+                    _vmstats_inc(VMSTAT_PAGE_FAULT_ZERO); /* STATS */
+                }             
                 
+                pg->paddr = paddr;               
+                // _vmstats_inc(VMSTAT_PAGE_FAULT_ZERO); /* STATS */
                 
+            }
+            else
+            {
+                if (segment == 0 && first_code_read == 0)
+                    first_code_read = 1;
+                wr_to = 1;
+                paddr = pg->paddr;
+                
+                _vmstats_inc(VMSTAT_TLB_RELOAD); /* STATS */
+            }
+            
+            
             break;
             
 	    case VM_FAULT_WRITE:
+            
+            //if (segment == 0 && first_load == 0)
+            wr_to = 1;
+            
+            if (!pg->valid)
+            {
+                pg->valid = 1;
+                pg->vaddr = faultaddress;
                 
-                //if (segment == 0 && first_load == 0)
-                        wr_to = 1;
                 
-                if (!pg->valid)
-                {
-                    pg->valid = 1;
-                    pg->vaddr = faultaddress;
+                if(f_size != 0) {
                     
-                    
-                    if(f_size != 0) {
-                        
-                        if (second_write == 0 && segment == 1){
-                            first_read = 0;
-                            paddr = getppages(seg_size);
-                            second_write = 1;
-                            wr_to = 0;
-                        } else {
-                            first_read = 1;
-                            paddr = getppages(1);
-                        }
-                        
-                        //if (segment == 0 || segment == 1)
-                            
-                       // else 
-                         //   paddr = getppages(seg_size);
-                        
-                        if (paddr == NULL)
-                        {
-                            return ENOMEM;
-
-                        }
-                        pg->paddr = paddr;
-                        
-                        if (segment != 2) {
-                            
-                            splx(spl);
-
-                            result = load_each_segment(as->v, offset, faultaddress, paddr, seg_size*PAGE_SIZE, f_size, flags & E_ONLY, first_read);
-                            spl = splhigh();
-
-                            if (result) {
-                                lock_release(tlb.tlb_lock);
-                                   return result;
-                            }
-                                
-                            _vmstats_inc(VMSTAT_PAGE_FAULT_DISK);
-                            _vmstats_inc(VMSTAT_ELF_FILE_READ);
-                            
-                        } else {
-                            _vmstats_inc(VMSTAT_PAGE_FAULT_ZERO); /* STATS */
-                        }
+                    if (second_write == 0 && segment == 1){
+                        first_read = 0;
+                        paddr = getppages(seg_size);
+                        second_write = 1;
+                        wr_to = 0;
                     } else {
+                        first_read = 1;
                         paddr = getppages(1);
-                        if (paddr == NULL)
-                        {
-                            return ENOMEM;
-
-                        }
-                        _vmstats_inc(VMSTAT_PAGE_FAULT_ZERO); /* STATS */
+                    }
+                    
+                    //if (segment == 0 || segment == 1)
+                    
+                    // else 
+                    //   paddr = getppages(seg_size);
+                    
+                    if (paddr == NULL)
+                    {
+                        return ENOMEM;
+                        
                     }
                     pg->paddr = paddr;
-                }
-                else
-                {
-                    paddr = pg->paddr;
                     
-                    _vmstats_inc(VMSTAT_TLB_RELOAD); /* STATS */
-                      
+                    if (segment != 2) {
+                        
+                        splx(spl);
+                        
+                        result = load_each_segment(as->v, offset, faultaddress, paddr, seg_size*PAGE_SIZE, f_size, flags & E_ONLY, first_read);
+                        spl = splhigh();
+                        
+                        if (result) {
+                            lock_release(tlb.tlb_lock);
+                            return result;
+                        }
+                        
+                        _vmstats_inc(VMSTAT_PAGE_FAULT_DISK);
+                        _vmstats_inc(VMSTAT_ELF_FILE_READ);
+                        
+                    } else {
+                        _vmstats_inc(VMSTAT_PAGE_FAULT_ZERO); /* STATS */
+                    }
+                } else {
+                    paddr = getppages(1);
+                    if (paddr == NULL)
+                    {
+                        return ENOMEM;
+                        
+                    }
+                    _vmstats_inc(VMSTAT_PAGE_FAULT_ZERO); /* STATS */
                 }
-		break;
+                pg->paddr = paddr;
+            }
+            else
+            {
+                paddr = pg->paddr;
+                
+                _vmstats_inc(VMSTAT_TLB_RELOAD); /* STATS */
+                
+            }
+            break;
 	    default:
-		return EINVAL;
+            return EINVAL;
 	}
-
-        splx(spl);
-int j;
-_vmstats_inc(VMSTAT_TLB_FAULT);
-if (wr_to == 1 || (segment == 2) || (first_code_read == 1)) {
     
+    splx(spl);
+    int j;
+    _vmstats_inc(VMSTAT_TLB_FAULT);
+    if (wr_to == 1 || (segment == 2) || (first_code_read == 1)) {
+        
         lock_acquire(tlb.tlb_lock);
         
         if (first_code_read && faultaddress >= vbase1 && faultaddress < vtop1) {
             
-           for (i=0; i<NUM_TLB; i++) {
+            for (i=0; i<NUM_TLB; i++) {
                 TLB_Read(&ehi, &elo, i);
                 
                 if (!(elo & TLBLO_VALID)) {
-                        continue;
+                    continue;
                 }
                 
                 if (ehi >= vbase1 && ehi < vtop1) {
@@ -705,9 +625,9 @@ if (wr_to == 1 || (segment == 2) || (first_code_read == 1)) {
                 }
                 TLB_Write(ehi, elo, i);
             }
-           
-           probe = TLB_Probe(faultaddress,0);
-           if (probe >= 0) {
+            
+            probe = TLB_Probe(faultaddress,0);
+            if (probe >= 0) {
                 first_code_read = 0;
                 code_write_nread = 0;
                 
@@ -716,78 +636,78 @@ if (wr_to == 1 || (segment == 2) || (first_code_read == 1)) {
                 vmstats_inc(VMSTAT_TLB_FAULT_FREE); /* STATS */
                 
                 return 0;
-           }
-           //if ()
+            }
+            //if ()
         } //else {
-            for (i=0; i<NUM_TLB; i++) {
-                
-                    TLB_Read(&ehi, &elo, i);
-                    
-                    
-                    if (elo & TLBLO_VALID) {
-                            continue;
-                    }
-                    ehi = faultaddress;
-
-                    
-                    if ((first_code_read && faultaddress >= vbase1 && faultaddress < vtop1) ||
-                            ((code_write_nread == 0) && faultaddress >= vbase1 && faultaddress < vtop1)) {
-                        
-                            elo = paddr | TLBLO_VALID;
-
-                        first_code_read = 0;
-                        code_write_nread = 0;
-                    }
-                    else {
-                        //if (faultaddress >= vbase1 && faultaddress < vtop1){
-                             //elo = paddr | TLBLO_VALID;
-                        //}else{
-                            elo = paddr | TLBLO_DIRTY | TLBLO_VALID;
-                        //}
-                    }
-                        TLB_Write(ehi, elo, i);
-                    
-
-                    DEBUG(DB_VM, "dumbvm: 0x%x -> 0x%x\n", faultaddress, paddr);
-                    
-                    
-                    //splx(spl);
-                    lock_release(tlb.tlb_lock);
-                    vmstats_inc(VMSTAT_TLB_FAULT_FREE); /* STATS */
-                    return 0;
+        for (i=0; i<NUM_TLB; i++) {
+            
+            TLB_Read(&ehi, &elo, i);
+            
+            
+            if (elo & TLBLO_VALID) {
+                continue;
             }
-
-            int victim = tlb_get_rr_victim();
-            //kprintf("vm fault: got our victim, %d \n",victim);
-            if (victim < 0 || victim >= NUM_TLB)
-            {
-                 lock_release(tlb.tlb_lock);
-                return EFAULT;
-            }
-
             ehi = faultaddress;
             
+            
             if ((first_code_read && faultaddress >= vbase1 && faultaddress < vtop1) ||
-                            ((code_write_nread == 0) && faultaddress >= vbase1 && faultaddress < vtop1)) {
+                ((code_write_nread == 0) && faultaddress >= vbase1 && faultaddress < vtop1)) {
+                
                 elo = paddr | TLBLO_VALID;
-
+                
                 first_code_read = 0;
                 code_write_nread = 0;
-            } else {
-                elo = paddr | TLBLO_DIRTY | TLBLO_VALID;
             }
-                 TLB_Write(ehi, elo, victim);          
+            else {
+                //if (faultaddress >= vbase1 && faultaddress < vtop1){
+                //elo = paddr | TLBLO_VALID;
+                //}else{
+                elo = paddr | TLBLO_DIRTY | TLBLO_VALID;
+                //}
+            }
+            TLB_Write(ehi, elo, i);
             
             
+            DEBUG(DB_VM, "dumbvm: 0x%x -> 0x%x\n", faultaddress, paddr);
+            
+            
+            //splx(spl);
             lock_release(tlb.tlb_lock);
-
-
-            vmstats_inc(VMSTAT_TLB_FAULT_REPLACE); /* STATS *///
+            vmstats_inc(VMSTAT_TLB_FAULT_FREE); /* STATS */
+            return 0;
+        }
+        
+        int victim = tlb_get_rr_victim();
+        //kprintf("vm fault: got our victim, %d \n",victim);
+        if (victim < 0 || victim >= NUM_TLB)
+        {
+            lock_release(tlb.tlb_lock);
+            return EFAULT;
+        }
+        
+        ehi = faultaddress;
+        
+        if ((first_code_read && faultaddress >= vbase1 && faultaddress < vtop1) ||
+            ((code_write_nread == 0) && faultaddress >= vbase1 && faultaddress < vtop1)) {
+            elo = paddr | TLBLO_VALID;
+            
+            first_code_read = 0;
+            code_write_nread = 0;
+        } else {
+            elo = paddr | TLBLO_DIRTY | TLBLO_VALID;
+        }
+        TLB_Write(ehi, elo, victim);          
+        
+        
+        lock_release(tlb.tlb_lock);
+        
+        
+        vmstats_inc(VMSTAT_TLB_FAULT_REPLACE); /* STATS *///
         //}
-} else {
-    vmstats_inc(VMSTAT_TLB_FAULT_REPLACE);
-}
-                return 0;
-
+    } else {
+        vmstats_inc(VMSTAT_TLB_FAULT_REPLACE);
+    }
+    return 0;
+    
 }
 
