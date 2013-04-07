@@ -33,6 +33,7 @@ struct addrspace {
         size_t filesz1;
 	vaddr_t as_vbase2;
         int flag1;
+        int entsize1;
 	//paddr_t as_pbase2;
 	size_t as_npages2;
         size_t filesz2;

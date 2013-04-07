@@ -80,6 +80,7 @@ vfs_open(char *path, int openflags, struct vnode **ret)
 		}
 	}
 
+        vn->rw_lock = lock_create("vm_fault lock");
 	*ret = vn;
 
 	return 0;
@@ -89,6 +90,7 @@ vfs_open(char *path, int openflags, struct vnode **ret)
 void
 vfs_close(struct vnode *vn)
 {
+    lock_destroy(vn->rw_lock);
 	/*
 	 * VOP_DECOPEN and VOP_DECREF don't return errors.
 	 *

@@ -174,7 +174,7 @@ load_elf(struct vnode *v, vaddr_t *entrypoint)
 				ph.p_type);
 			return ENOEXEC;
 		}
-                kprintf("vaddr %x, i: %d\n",ph.p_vaddr, i);
+                //kprintf("vaddr %x, i: %d\n",ph.p_vaddr, i);
 		result = as_define_region(curthread->t_vmspace,
 					  ph.p_vaddr, ph.p_memsz, ph.p_filesz,
 					  ph.p_flags & PF_R,
@@ -192,7 +192,7 @@ load_elf(struct vnode *v, vaddr_t *entrypoint)
 
         curthread->t_vmspace->num_segs = eh.e_phnum;
         curthread->t_vmspace->offset = eh.e_phoff;
-        kprintf("offset: %d\n", curthread->t_vmspace->offset);
+        //kprintf("offset: %d\n", curthread->t_vmspace->offset);
         curthread->t_vmspace->entsize = eh.e_phentsize;
         curthread->t_vmspace->v = v;
         curthread->t_vmspace->entrypoint = eh.e_entry;
@@ -226,10 +226,11 @@ load_elf(struct vnode *v, vaddr_t *entrypoint)
 				ph.p_type);
 			return ENOEXEC;
 		}
-                kprintf("vaddr: %x, off: %d, filesz: %d\n", ph.p_vaddr, ph.p_offset, ph.p_filesz);
+                //kprintf("vaddr: %x, off: %d, filesz: %d\n", ph.p_vaddr, ph.p_offset, ph.p_filesz);
                 if (i == 1) {
                     curthread->t_vmspace->off_1 = ph.p_offset;
                     curthread->t_vmspace->filesz1 = ph.p_filesz;
+                    curthread->t_vmspace->entsize1 = eh.e_phentsize;
                 }
                 else if (i == 2) {
                     curthread->t_vmspace->off_2 = ph.p_offset;

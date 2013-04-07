@@ -31,6 +31,8 @@ struct vnode {
 	void *vn_data;                  /* Filesystem-specific data */
 
 	const struct vnode_ops *vn_ops; /* Functions on this vnode */
+        
+        struct lock *rw_lock;
 };
 
 /*

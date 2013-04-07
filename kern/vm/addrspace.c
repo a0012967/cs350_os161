@@ -192,7 +192,7 @@ as_activate(struct addrspace *as)
 	// invalidate entries in TLB only if address spaces are different
     
     if (as != curthread->t_vmspace)
-    {
+    {kprintf("in as_activate\n");
         vmstats_inc(VMSTAT_TLB_INVALIDATE); /* STATS */
         for (i=0; i<NUM_TLB; i++) {
             TLB_Write(TLBHI_INVALID(i), TLBLO_INVALID(), i);

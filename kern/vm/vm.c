@@ -419,10 +419,10 @@ load_each_segment(struct vnode *v, off_t offset, vaddr_t vaddr, paddr_t paddr,
             return 0;
         }
 	
-
         result = VOP_READ(v, &u);
         //lock_acquire(tlb.tlb_lock);
 	if (result) {
+        
 		return result;
 	}
 	if (u.uio_resid != 0) {
@@ -431,7 +431,7 @@ load_each_segment(struct vnode *v, off_t offset, vaddr_t vaddr, paddr_t paddr,
 		return ENOEXEC;
 	}
 
-	/* Fill the rest of the memory space (if any) with zeros */
+	 /*Fill the rest of the memory space (if any) with zeros */
 	fillamt = memsize - filesize;
 	if (fillamt > 0) {
 		DEBUG(DB_EXEC, "ELF: Zero-filling %lu more bytes\n", 
@@ -443,6 +443,7 @@ load_each_segment(struct vnode *v, off_t offset, vaddr_t vaddr, paddr_t paddr,
 }
 
 int first_read = 0;
+int second_write = 0;
 vaddr_t first_v = 0;
 
 int
@@ -521,6 +522,7 @@ vm_fault(int faulttype, vaddr_t faultaddress)
         offset = as->off_2;
         flags=as->flag2;
         first_load = 0;
+        //second_write = 1;
     } else if (faultaddress >= stackbase && faultaddress < stacktop) { // look in stack
         pg = (struct page *)array_getguy(as->usegs, ((faultaddress - stackbase)/PAGE_SIZE));
         segment = 2;
@@ -557,20 +559,23 @@ vm_fault(int faulttype, vaddr_t faultaddress)
                     if(f_size != 0) {
                         paddr = getppages(seg_size);
                         if (paddr == NULL)
-                        {
+                        {kprintf("memsize\n");
                             return ENOMEM;
 
                         }
                         
                         pg->paddr = paddr;
-                        splx(spl);
-                            result = load_each_segment(as->v, offset, faultaddress, paddr, seg_size*PAGE_SIZE, f_size, flags & E_ONLY, first_read);
-                        spl = splhigh();
+                        if (segment != 2){
+                        //for (i = 0; i < seg_size; i++) {
+                            splx(spl);
+                                result = load_each_segment(as->v, offset, faultaddress, paddr, seg_size*PAGE_SIZE, f_size, flags & E_ONLY, 0);
+                            spl = splhigh();
 
-                            if (result) {
+                            if (result) {kprintf("load\n");
                                     return result;
                             }
-
+                        //}
+                        }
                     
                     } else {
                         paddr = getppages(1);
@@ -598,8 +603,9 @@ vm_fault(int faulttype, vaddr_t faultaddress)
             
 	    case VM_FAULT_WRITE:
                 
-                wr_to = 1;
-                first_read = 1;
+                //if (segment == 0 && first_read == 0)
+                        wr_to = 1;
+                
                 if (!pg->valid)
                 {
                     pg->valid = 1;
@@ -607,21 +613,41 @@ vm_fault(int faulttype, vaddr_t faultaddress)
                     
                     
                     if(f_size != 0) {
-                        paddr = getppages(seg_size);
+                        
+                        if (second_write == 0 && segment == 1){
+                            first_read = 0;
+                            paddr = getppages(seg_size);
+                            second_write = 1;
+                            wr_to = 0;
+                        } else {
+                            first_read = 1;
+                            paddr = getppages(1);
+                        }
+                        
+                        //if (segment == 0 || segment == 1)
+                            
+                       // else 
+                         //   paddr = getppages(seg_size);
+                        
                         if (paddr == NULL)
                         {
                             return ENOMEM;
 
                         }
+                        pg->paddr = paddr;
+                        //paddr = pg->paddr;
                         if (segment != 2){
-                            splx(spl);
-
-                            result = load_each_segment(as->v, offset, faultaddress, paddr, seg_size*PAGE_SIZE, f_size, flags & E_ONLY, first_read);
-                            spl = splhigh();
-                            if (result) {
-                                lock_release(tlb.tlb_lock);
-                                   return result;
-                            }
+                            //for (i = 0; i < seg_size; i++) {
+                                splx(spl);
+    //kprintf("before\n");
+                                result = load_each_segment(as->v, offset, faultaddress, paddr, seg_size*PAGE_SIZE, f_size, flags & E_ONLY, first_read);
+                                spl = splhigh();
+                                //kprintf("after\n");
+                                if (result) {
+                                    lock_release(tlb.tlb_lock);
+                                       return result;
+                                }
+                            //}
                         }
                     } else {
                         paddr = getppages(1);
@@ -639,6 +665,7 @@ vm_fault(int faulttype, vaddr_t faultaddress)
                 else
                 {
                     paddr = pg->paddr;
+                    //kprintf("paddr %x\n", paddr);
                     _vmstats_inc(VMSTAT_TLB_RELOAD); /* STATS */
                       
                 }

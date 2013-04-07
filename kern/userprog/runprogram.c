@@ -96,11 +96,55 @@ return result;
     
     lock_release(proc_lock);
     
-/* Warp to user mode. */
-md_usermode(0 /*argc*/, NULL /*userspace addr of argv*/,
-stackptr, entrypoint);
+//Argument passing
+        vaddr_t initialptr = stackptr;
+        unsigned int i;
+        unsigned int j; // i reversed index
+        int err;
+        
+        unsigned int alignlen; // length of argument with correct mod4 alignment
+        
+        //if (argc > 1)
+        //{
+            for (i = 0; i < argc; i++) // copyout the array values
+            {
+                j = argc-(i+1);
+
+                alignlen = calc_align_length(argv[j]);
+
+                stackptr = stackptr-alignlen;
+
+                if ((err = copyoutstr(argv[j], stackptr, strlen(argv[j])+1, &alignlen)) != 0)
+                    kprintf("ERROR copyoutstr %d\n", err);
+
+                argv[j] = stackptr; // fill argv with actual user space ptr
+            }
+
+            argv[argc] = NULL; // ensure last argument point to NULL
+            
+            for (i = 0; i <= argc; i++) // copyout the array addresses
+            {
+                j = argc-i;
+                stackptr = stackptr-4;
+
+                if ((err = copyout(&argv[j], stackptr, 4)) != 0)
+                    kprintf("ERROR copyout %d\n", err);
+
+            }
+            
+            /* Warp to user mode. */
+            md_usermode(argc /*argc*/, stackptr /*userspace addr of argv*/,
+                        stackptr, entrypoint);
+        //}
+        //else
+        //{
+            /* Warp to user mode. */
+            //md_usermode(1 /*argc*/, NULL /*userspace addr of argv*/,
+              // stackptr, entrypoint);
+        //}
 
 /* md_usermode does not return */
 panic("md_usermode returned\n");
+
 return EINVAL;
 }
